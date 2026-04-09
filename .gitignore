@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+backend/.env
+
+# FastAPI storage artifacts
+backend/app/storage/uploads/*
+backend/app/storage/extracted/*
+backend/app/storage/results/*
+!backend/app/storage/uploads/.gitkeep
+!backend/app/storage/extracted/.gitkeep
+!backend/app/storage/results/.gitkeep
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

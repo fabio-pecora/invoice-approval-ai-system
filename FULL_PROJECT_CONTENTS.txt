@@ -1,0 +1,2611 @@
+COMPLETE FOLDER STRUCTURE
+.gitignore
+README.md
+backend/
+backend/.env.example
+backend/app/
+backend/app/__init__.py
+backend/app/api/
+backend/app/api/__init__.py
+backend/app/api/routes.py
+backend/app/core/
+backend/app/core/config.py
+backend/app/core/logging.py
+backend/app/main.py
+backend/app/models/
+backend/app/models/__init__.py
+backend/app/sample_data/
+backend/app/sample_data/generate_sample_pdfs.py
+backend/app/sample_data/sample_invoice.pdf
+backend/app/sample_data/sample_pricing_breakdown.pdf
+backend/app/sample_data/sample_ticket_1.pdf
+backend/app/sample_data/sample_ticket_2.pdf
+backend/app/schemas/
+backend/app/schemas/__init__.py
+backend/app/schemas/approval.py
+backend/app/services/
+backend/app/services/approval_service.py
+backend/app/services/calculation_checker.py
+backend/app/services/confidence_service.py
+backend/app/services/invoice_parser.py
+backend/app/services/llm_service.py
+backend/app/services/pdf_extraction.py
+backend/app/services/pricing_checker.py
+backend/app/services/pricing_parser.py
+backend/app/services/ticket_matcher.py
+backend/app/services/ticket_parser.py
+backend/app/storage/
+backend/app/storage/extracted/
+backend/app/storage/extracted/.gitkeep
+backend/app/storage/results/
+backend/app/storage/results/.gitkeep
+backend/app/storage/uploads/
+backend/app/storage/uploads/.gitkeep
+backend/app/utils/
+backend/app/utils/file_utils.py
+backend/app/utils/text_utils.py
+backend/requirements.txt
+frontend/
+frontend/.env.local.example
+frontend/app/
+frontend/app/globals.css
+frontend/app/layout.tsx
+frontend/app/page.tsx
+frontend/components/
+frontend/components/file-list.tsx
+frontend/components/results-panel.tsx
+frontend/components/stage-card.tsx
+frontend/components/status-badge.tsx
+frontend/components/upload-panel.tsx
+frontend/lib/
+frontend/lib/api.ts
+frontend/lib/types.ts
+frontend/next-env.d.ts
+frontend/next.config.js
+frontend/package.json
+frontend/public/
+frontend/tsconfig.json
+start-backend.bat
+start-frontend.bat
+
+====================================================================================================
+FILE: .gitignore
+====================================================================================================
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+backend/.env
+
+# FastAPI storage artifacts
+backend/app/storage/uploads/*
+backend/app/storage/extracted/*
+backend/app/storage/results/*
+!backend/app/storage/uploads/.gitkeep
+!backend/app/storage/extracted/.gitkeep
+!backend/app/storage/results/.gitkeep
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+
+====================================================================================================
+FILE: README.md
+====================================================================================================
+# Invoice Approval System
+
+A safety-first invoice review system for AP/AR agents.
+
+This project accepts:
+- one invoice PDF
+- zero or more ticket PDFs
+- one optional pricing breakdown PDF
+
+It evaluates the invoice through three approval stages:
+- **Calculation Check**
+- **Ticket Match Check**
+- **Pricing Breakdown Check**
+
+The system is designed to be conservative:
+- deterministic parsing and rules first
+- OCR second if needed
+- optional LLM fallback only for ambiguous interpretation
+- if confidence is too low, the result is **Requires Human Review**
+
+## Tech Stack
+
+### Backend
+- Python 3.11+
+- FastAPI
+- pdfplumber + pypdf for native PDF text extraction
+- PyMuPDF for PDF page rendering
+- pytesseract for OCR fallback
+- rapidfuzz for safe fuzzy matching
+- optional OpenAI fallback through environment variables
+
+### Frontend
+- Next.js 14
+- React 18
+- TypeScript
+- simple CSS for a clean local UI
+
+## Why this architecture
+
+This stack keeps the project easy to run locally on Windows while still giving you:
+- a clean browser UI
+- a Python backend for document processing
+- deterministic review logic with OCR fallback
+- optional LLM interpretation without making the core system depend on it
+
+## Final statuses used by the system
+
+Overall and stage-level statuses use these exact labels:
+- **Approved**
+- **Partially Approved**
+- **Requires Human Review**
+- **Not Approved**
+
+## Project Structure
+
+```text
+invoice-approval-system/
+├── .gitignore
+├── README.md
+├── start-backend.bat
+├── start-frontend.bat
+├── backend/
+│   ├── .env.example
+│   ├── requirements.txt
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── api/
+│       │   ├── __init__.py
+│       │   └── routes.py
+│       ├── core/
+│       │   ├── config.py
+│       │   └── logging.py
+│       ├── models/
+│       │   └── __init__.py
+│       ├── sample_data/
+│       │   └── generate_sample_pdfs.py
+│       ├── schemas/
+│       │   ├── __init__.py
+│       │   └── approval.py
+│       ├── services/
+│       │   ├── approval_service.py
+│       │   ├── calculation_checker.py
+│       │   ├── confidence_service.py
+│       │   ├── invoice_parser.py
+│       │   ├── llm_service.py
+│       │   ├── pdf_extraction.py
+│       │   ├── pricing_checker.py
+│       │   ├── pricing_parser.py
+│       │   ├── ticket_matcher.py
+│       │   └── ticket_parser.py
+│       ├── storage/
+│       │   ├── extracted/
+│       │   │   └── .gitkeep
+│       │   ├── results/
+│       │   │   └── .gitkeep
+│       │   └── uploads/
+│       │       └── .gitkeep
+│       └── utils/
+│           ├── file_utils.py
+│           └── text_utils.py
+└── frontend/
+    ├── .env.local.example
+    ├── next-env.d.ts
+    ├── next.config.js
+    ├── package.json
+    ├── tsconfig.json
+    ├── app/
+    │   ├── globals.css
+    │   ├── layout.tsx
+    │   └── page.tsx
+    ├── components/
+    │   ├── file-list.tsx
+    │   ├── results-panel.tsx
+    │   ├── stage-card.tsx
+    │   ├── status-badge.tsx
+    │   └── upload-panel.tsx
+    ├── lib/
+    │   ├── api.ts
+    │   └── types.ts
+    └── public/
+```
+
+## Prerequisites for Windows
+
+Install these first:
+- **Python 3.11 or newer**
+- **Node.js 18 or newer**
+- **Tesseract OCR for Windows**
+- VS Code
+
+## Install Tesseract OCR on Windows
+
+1. Download the Windows installer from the UB Mannheim Tesseract builds page.
+2. Install it to the default path:
+   `C:\Program Files\Tesseract-OCR`
+3. Make sure `tesseract.exe` exists here:
+   `C:\Program Files\Tesseract-OCR\tesseract.exe`
+4. Keep that exact path in `backend/.env`
+
+If you install Tesseract somewhere else, update this line in `backend/.env`:
+
+```env
+TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
+```
+
+## Backend setup
+
+Open a terminal in VS Code and run:
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+If you want optional LLM fallback, add your API key inside `backend/.env`:
+
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+If you do not add an API key, the app still works. It simply skips LLM fallback safely.
+
+Run the backend:
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Backend URL:
+- API: `http://localhost:8000`
+- Swagger docs: `http://localhost:8000/docs`
+
+## Frontend setup
+
+Open another terminal in VS Code and run:
+
+```bash
+cd frontend
+copy .env.local.example .env.local
+npm install
+npm run dev
+```
+
+Frontend URL:
+- `http://localhost:3000`
+
+## Quick start with the batch files
+
+From the project root you can also use:
+- `start-backend.bat`
+- `start-frontend.bat`
+
+These are convenience scripts for Windows.
+
+## How the approval logic works
+
+### 1. Calculation Check
+
+The system tries to parse:
+- item or service description
+- quantity
+- unit price
+- line total
+- subtotal
+- tax
+- fees
+- grand total
+
+It checks:
+- quantity × unit price = line total
+- sum of line totals = subtotal when subtotal is available
+- subtotal + tax + fees = grand total when totals are available
+
+If the values cannot be parsed safely, this stage becomes:
+- **Requires Human Review**
+
+If deterministic math fails, this stage becomes:
+- **Not Approved**
+
+### 2. Ticket Match Check
+
+The system extracts likely entries from ticket PDFs and compares them against invoice lines.
+It uses conservative fuzzy matching.
+If the match is weak or unclear, it does not auto-approve.
+
+Possible outcomes:
+- all clear matches: **Approved**
+- some supported, some unclear: **Partially Approved**
+- ambiguous support: **Requires Human Review**
+- missing support: **Not Approved**
+
+### 3. Pricing Breakdown Check
+
+The system extracts likely pricing rules from the pricing PDF and compares them to invoice unit prices.
+It uses conservative fuzzy matching for description mapping.
+If the mapping is uncertain, it does not auto-approve.
+
+Possible outcomes:
+- all clear matches: **Approved**
+- some matches and some unclear: **Partially Approved**
+- unclear mapping: **Requires Human Review**
+- clear price mismatches: **Not Approved**
+
+## OCR and LLM fallback order
+
+The system follows this exact philosophy:
+
+1. native PDF text extraction
+2. OCR when native extraction quality is poor
+3. optional LLM interpretation only if ambiguity remains
+4. never use the LLM to override deterministic failures
+5. if confidence is low, return **Requires Human Review**
+
+## Generating sample test PDFs
+
+The project includes a small script that generates sample PDFs for local testing.
+
+Run:
+
+```bash
+cd backend
+.venv\Scripts\activate
+python app/sample_data/generate_sample_pdfs.py
+```
+
+This creates sample files in:
+- `backend/app/sample_data/sample_invoice.pdf`
+- `backend/app/sample_data/sample_ticket_1.pdf`
+- `backend/app/sample_data/sample_ticket_2.pdf`
+- `backend/app/sample_data/sample_pricing_breakdown.pdf`
+
+## Testing the app
+
+1. Start the backend.
+2. Start the frontend.
+3. Open `http://localhost:3000`
+4. Upload:
+   - `sample_invoice.pdf`
+   - the two ticket PDFs
+   - `sample_pricing_breakdown.pdf`
+5. Click **Run Approval**
+
+## Notes about confidence and safety
+
+This project is intentionally conservative.
+It is built to reduce false approvals.
+If parsing is weak, if mapping is unclear, or if support is incomplete, the system should lean toward:
+- **Requires Human Review**
+- or **Not Approved**
+
+## Troubleshooting
+
+### Backend fails because Tesseract is missing
+Check that this file exists:
+
+```text
+C:\Program Files\Tesseract-OCR\tesseract.exe
+```
+
+Then make sure `backend/.env` points to it.
+
+### Frontend cannot reach backend
+Check that:
+- backend is running on port 8000
+- `frontend/.env.local` contains:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+```
+
+### OCR seems weak
+That can happen with low-quality scans. The app will reduce confidence and prefer human review instead of approving risky cases.
+
+## Future improvements you could add later
+
+A few natural next steps:
+- stronger table extraction for invoices with very complex layouts
+- file history and saved review sessions
+- user authentication and reviewer notes
+- CSV export of approval results
+- database persistence
+
+
+
+====================================================================================================
+FILE: backend/.env.example
+====================================================================================================
+APP_NAME=Invoice Approval System
+APP_ENV=development
+APP_HOST=0.0.0.0
+APP_PORT=8000
+FRONTEND_URL=http://localhost:3000
+MAX_UPLOAD_MB=25
+UPLOAD_DIR=app/storage/uploads
+EXTRACTED_DIR=app/storage/extracted
+RESULTS_DIR=app/storage/results
+TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+
+
+====================================================================================================
+FILE: backend/app/__init__.py
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/api/__init__.py
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/api/routes.py
+====================================================================================================
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.schemas.approval import ApprovalResponse
+from app.services.approval_service import ApprovalService
+from app.utils.file_utils import save_upload
+from app.core.config import get_settings
+
+router = APIRouter(prefix="/api")
+settings = get_settings()
+service = ApprovalService()
+
+
+@router.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
+
+
+@router.post("/approve", response_model=ApprovalResponse)
+async def approve_invoice(
+    invoice: Annotated[UploadFile, File(...)],
+    tickets: Annotated[list[UploadFile] | None, File()] = None,
+    pricing_breakdown: Annotated[UploadFile | None, File()] = None,
+) -> ApprovalResponse:
+    try:
+        invoice_path = await save_upload(invoice, settings.upload_path)
+        ticket_paths = []
+        for ticket in tickets or []:
+            ticket_paths.append(await save_upload(ticket, settings.upload_path))
+        pricing_path = await save_upload(pricing_breakdown, settings.upload_path) if pricing_breakdown else None
+        return service.run(invoice_path, ticket_paths, pricing_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Approval process failed: {exc}") from exc
+
+
+====================================================================================================
+FILE: backend/app/core/config.py
+====================================================================================================
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "Invoice Approval System"
+    app_env: str = "development"
+    app_host: str = "0.0.0.0"
+    app_port: int = 8000
+    frontend_url: str = "http://localhost:3000"
+
+    max_upload_mb: int = 25
+    upload_dir: str = "app/storage/uploads"
+    extracted_dir: str = "app/storage/extracted"
+    results_dir: str = "app/storage/results"
+    tesseract_cmd: str = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4.1-mini"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+    @property
+    def upload_path(self) -> Path:
+        return Path(self.upload_dir)
+
+    @property
+    def extracted_path(self) -> Path:
+        return Path(self.extracted_dir)
+
+    @property
+    def results_path(self) -> Path:
+        return Path(self.results_dir)
+
+
+@lru_cache
+def get_settings() -> Settings:
+    settings = Settings()
+    settings.upload_path.mkdir(parents=True, exist_ok=True)
+    settings.extracted_path.mkdir(parents=True, exist_ok=True)
+    settings.results_path.mkdir(parents=True, exist_ok=True)
+    return settings
+
+
+====================================================================================================
+FILE: backend/app/core/logging.py
+====================================================================================================
+import logging
+
+
+def configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
+
+
+====================================================================================================
+FILE: backend/app/main.py
+====================================================================================================
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes import router
+from app.core.config import get_settings
+from app.core.logging import configure_logging
+
+settings = get_settings()
+configure_logging()
+
+app = FastAPI(
+    title=settings.app_name,
+    version="1.0.0",
+    description="Safety-first invoice approval system for AP/AR review.",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.frontend_url, "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(router)
+
+
+@app.get("/")
+def root() -> dict:
+    return {
+        "app": settings.app_name,
+        "status": "ok",
+        "docs": "/docs",
+    }
+
+
+====================================================================================================
+FILE: backend/app/models/__init__.py
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/sample_data/generate_sample_pdfs.py
+====================================================================================================
+from pathlib import Path
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def make_pdf(filename: str, lines: list[str]) -> None:
+    path = BASE_DIR / filename
+    c = canvas.Canvas(str(path), pagesize=letter)
+    width, height = letter
+    y = height - 60
+    for line in lines:
+        c.drawString(50, y, line)
+        y -= 18
+        if y < 50:
+            c.showPage()
+            y = height - 60
+    c.save()
+
+
+make_pdf(
+    "sample_invoice.pdf",
+    [
+        "Acme Ready Mix",
+        "Invoice # INV-10045",
+        "Date: 04/08/2026",
+        "",
+        "Concrete Delivery 10 125.00 1250.00",
+        "Labor Service 4 85.00 340.00",
+        "Fuel Surcharge 1 45.00 45.00",
+        "Subtotal 1635.00",
+        "Tax 130.80",
+        "Grand Total 1765.80",
+    ],
+)
+
+make_pdf(
+    "sample_ticket_1.pdf",
+    [
+        "Delivery Ticket # DT-6001",
+        "Date: 04/08/2026",
+        "Concrete Delivery 10 yards",
+        "Job Ref 2209-A",
+    ],
+)
+
+make_pdf(
+    "sample_ticket_2.pdf",
+    [
+        "Service Ticket # ST-1002",
+        "Date: 04/08/2026",
+        "Labor Service 4 hours",
+        "Fuel Surcharge 1",
+    ],
+)
+
+make_pdf(
+    "sample_pricing_breakdown.pdf",
+    [
+        "Company Pricing Schedule",
+        "Concrete Delivery 125.00",
+        "Labor Service 85.00",
+        "Fuel Surcharge 45.00",
+    ],
+)
+
+print("Sample PDFs created in:", BASE_DIR)
+
+
+====================================================================================================
+FILE: backend/app/sample_data/sample_invoice.pdf
+====================================================================================================
+[binary file: not printed here]
+
+
+====================================================================================================
+FILE: backend/app/sample_data/sample_pricing_breakdown.pdf
+====================================================================================================
+[binary file: not printed here]
+
+
+====================================================================================================
+FILE: backend/app/sample_data/sample_ticket_1.pdf
+====================================================================================================
+[binary file: not printed here]
+
+
+====================================================================================================
+FILE: backend/app/sample_data/sample_ticket_2.pdf
+====================================================================================================
+[binary file: not printed here]
+
+
+====================================================================================================
+FILE: backend/app/schemas/__init__.py
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/schemas/approval.py
+====================================================================================================
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field
+
+ApprovalStatus = Literal[
+    "Approved",
+    "Partially Approved",
+    "Requires Human Review",
+    "Not Approved",
+]
+
+
+class ExtractedLineItem(BaseModel):
+    description: str
+    quantity: float | None = None
+    unit_price: float | None = None
+    line_total: float | None = None
+    raw_line: str
+
+
+class ExtractedDocumentData(BaseModel):
+    source_name: str
+    extraction_method: Literal["text", "ocr", "text+ocr"]
+    text_quality_score: float = Field(ge=0, le=1)
+    key_fields: dict[str, Any] = Field(default_factory=dict)
+    raw_text_preview: str = ""
+
+
+class StageResult(BaseModel):
+    name: Literal[
+        "Calculation Check",
+        "Ticket Match Check",
+        "Pricing Breakdown Check",
+    ]
+    status: ApprovalStatus
+    confidence: float = Field(ge=0, le=1)
+    summary: str
+    explanation: str
+    issues_found: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    extracted_data: dict[str, Any] = Field(default_factory=dict)
+    llm_used: bool = False
+
+
+class ApprovalResponse(BaseModel):
+    overall_status: ApprovalStatus
+    overall_summary: str
+    overall_explanation: str
+    invoice_filename: str
+    stages: list[StageResult]
+    extraction_details: list[ExtractedDocumentData]
+
+
+====================================================================================================
+FILE: backend/app/services/approval_service.py
+====================================================================================================
+from __future__ import annotations
+
+from pathlib import Path
+
+from app.schemas.approval import ApprovalResponse, ExtractedDocumentData
+from app.services.calculation_checker import CalculationChecker
+from app.services.confidence_service import ConfidenceService
+from app.services.invoice_parser import InvoiceParser
+from app.services.pdf_extraction import PDFExtractionService
+from app.services.pricing_checker import PricingChecker
+from app.services.pricing_parser import PricingParser
+from app.services.ticket_matcher import TicketMatcher
+from app.services.ticket_parser import TicketParser
+
+
+class ApprovalService:
+    def __init__(self) -> None:
+        self.pdf_extractor = PDFExtractionService()
+        self.invoice_parser = InvoiceParser()
+        self.ticket_parser = TicketParser()
+        self.pricing_parser = PricingParser()
+        self.calculation_checker = CalculationChecker()
+        self.ticket_matcher = TicketMatcher()
+        self.pricing_checker = PricingChecker()
+        self.confidence_service = ConfidenceService()
+
+    def run(
+        self,
+        invoice_path: Path,
+        ticket_paths: list[Path],
+        pricing_path: Path | None,
+    ) -> ApprovalResponse:
+        extraction_details: list[ExtractedDocumentData] = []
+
+        invoice_text, invoice_details = self.pdf_extractor.extract_document(invoice_path, "Invoice")
+        extraction_details.append(invoice_details)
+        parsed_invoice = self.invoice_parser.parse(invoice_text)
+        invoice_details.key_fields = {
+            "invoice_number": parsed_invoice.invoice_number,
+            "invoice_date": parsed_invoice.invoice_date,
+            "vendor_name": parsed_invoice.vendor_name,
+            "line_item_count": len(parsed_invoice.line_items),
+            "subtotal": parsed_invoice.subtotal,
+            "grand_total": parsed_invoice.grand_total,
+        }
+
+        ticket_entries = []
+        for ticket_path in ticket_paths:
+            text, details = self.pdf_extractor.extract_document(ticket_path, ticket_path.name)
+            entries = self.ticket_parser.parse(text)
+            details.key_fields = {"entry_count": len(entries)}
+            extraction_details.append(details)
+            ticket_entries.extend(entries)
+
+        pricing_rules = []
+        if pricing_path is not None:
+            pricing_text, pricing_details = self.pdf_extractor.extract_document(pricing_path, pricing_path.name)
+            pricing_rules = self.pricing_parser.parse(pricing_text)
+            pricing_details.key_fields = {"rule_count": len(pricing_rules)}
+            extraction_details.append(pricing_details)
+
+        calculation_stage = self.calculation_checker.check(parsed_invoice)
+        ticket_stage = self.ticket_matcher.check(parsed_invoice.line_items, ticket_entries)
+        pricing_stage = self.pricing_checker.check(parsed_invoice.line_items, pricing_rules)
+        stages = [calculation_stage, ticket_stage, pricing_stage]
+
+        overall_status, overall_summary, overall_explanation = self.confidence_service.overall(stages)
+
+        return ApprovalResponse(
+            overall_status=overall_status,
+            overall_summary=overall_summary,
+            overall_explanation=overall_explanation,
+            invoice_filename=invoice_path.name,
+            stages=stages,
+            extraction_details=extraction_details,
+        )
+
+
+====================================================================================================
+FILE: backend/app/services/calculation_checker.py
+====================================================================================================
+from __future__ import annotations
+
+from decimal import Decimal
+
+from app.schemas.approval import StageResult
+from app.services.invoice_parser import ParsedInvoice
+
+
+class CalculationChecker:
+    def check(self, parsed_invoice: ParsedInvoice) -> StageResult:
+        issues: list[str] = []
+        warnings: list[str] = []
+        checked_count = 0
+        passing_count = 0
+
+        extracted_data = {
+            "invoice_number": parsed_invoice.invoice_number,
+            "invoice_date": parsed_invoice.invoice_date,
+            "vendor_name": parsed_invoice.vendor_name,
+            "line_items": [item.model_dump() for item in parsed_invoice.line_items[:25]],
+            "subtotal": parsed_invoice.subtotal,
+            "tax": parsed_invoice.tax,
+            "fees": parsed_invoice.fees,
+            "grand_total": parsed_invoice.grand_total,
+        }
+
+        for item in parsed_invoice.line_items:
+            if item.quantity is None or item.unit_price is None or item.line_total is None:
+                continue
+            checked_count += 1
+            expected = round(float(Decimal(str(item.quantity)) * Decimal(str(item.unit_price))), 2)
+            actual = round(item.line_total, 2)
+            if abs(expected - actual) <= 0.01:
+                passing_count += 1
+            else:
+                issues.append(
+                    f"Line item '{item.description}' appears inconsistent: {item.quantity} × {item.unit_price:.2f} = {expected:.2f}, but invoice shows {actual:.2f}."
+                )
+
+        computed_subtotal = round(sum((item.line_total or 0) for item in parsed_invoice.line_items), 2) if parsed_invoice.line_items else None
+        if parsed_invoice.subtotal is not None and computed_subtotal is not None:
+            checked_count += 1
+            if abs(parsed_invoice.subtotal - computed_subtotal) <= 0.01:
+                passing_count += 1
+            else:
+                issues.append(
+                    f"Subtotal mismatch: parsed line items sum to {computed_subtotal:.2f}, but invoice subtotal shows {parsed_invoice.subtotal:.2f}."
+                )
+        elif parsed_invoice.subtotal is None:
+            warnings.append("Subtotal could not be reliably found on the invoice.")
+
+        if parsed_invoice.grand_total is not None:
+            components_total = (parsed_invoice.subtotal or computed_subtotal or 0) + (parsed_invoice.tax or 0) + (parsed_invoice.fees or 0)
+            checked_count += 1
+            if abs(parsed_invoice.grand_total - round(components_total, 2)) <= 0.01:
+                passing_count += 1
+            else:
+                issues.append(
+                    f"Grand total mismatch: subtotal + tax + fees = {components_total:.2f}, but invoice total shows {parsed_invoice.grand_total:.2f}."
+                )
+        else:
+            warnings.append("Grand total could not be reliably found on the invoice.")
+
+        if checked_count == 0:
+            return StageResult(
+                name="Calculation Check",
+                status="Requires Human Review",
+                confidence=0.28,
+                summary="The system could not reliably parse enough calculation fields to approve this stage.",
+                explanation="No dependable quantity, unit price, subtotal, or total values were available for deterministic math checks.",
+                issues_found=[],
+                warnings=["Invoice structure was too ambiguous for safe automatic calculation approval."],
+                extracted_data=extracted_data,
+                llm_used=False,
+            )
+
+        pass_ratio = passing_count / checked_count if checked_count else 0
+        confidence = min(0.95, 0.45 + (pass_ratio * 0.45) + (0.05 if checked_count >= 2 else 0))
+
+        if issues:
+            status = "Not Approved"
+            summary = "The invoice contains one or more calculation inconsistencies."
+            explanation = "Deterministic math checks found mismatches in line totals, subtotal, or grand total."
+        elif warnings:
+            status = "Partially Approved"
+            summary = "The available calculations checked out, but some financial fields could not be confirmed."
+            explanation = "All parsed math passed, but at least one supporting field was missing or unclear."
+        else:
+            status = "Approved"
+            summary = "Invoice calculations appear consistent based on the parsed data."
+            explanation = "Line totals and summary totals matched deterministic calculations within rounding tolerance."
+
+        return StageResult(
+            name="Calculation Check",
+            status=status,
+            confidence=round(confidence, 2),
+            summary=summary,
+            explanation=explanation,
+            issues_found=issues,
+            warnings=warnings,
+            extracted_data=extracted_data,
+            llm_used=False,
+        )
+
+
+====================================================================================================
+FILE: backend/app/services/confidence_service.py
+====================================================================================================
+from __future__ import annotations
+
+from app.schemas.approval import ApprovalStatus, StageResult
+
+
+class ConfidenceService:
+    def overall(self, stages: list[StageResult]) -> tuple[ApprovalStatus, str, str]:
+        statuses = [stage.status for stage in stages]
+
+        if any(status == "Not Approved" for status in statuses):
+            return (
+                "Not Approved",
+                "At least one approval stage failed deterministically.",
+                "The invoice should not be approved because one or more core checks found concrete problems.",
+            )
+
+        if all(status == "Approved" for status in statuses):
+            return (
+                "Approved",
+                "All approval stages passed with acceptable confidence.",
+                "Calculation, ticket support, and pricing checks all passed without unresolved warnings.",
+            )
+
+        if any(status == "Requires Human Review" for status in statuses):
+            return (
+                "Requires Human Review",
+                "The system found uncertainty that needs manual confirmation.",
+                "At least one stage could not be safely approved, so a person should review the invoice before any decision is made.",
+            )
+
+        return (
+            "Partially Approved",
+            "Some approval checks passed, but the invoice is not fully clean.",
+            "The invoice has meaningful support in some stages, but not enough for a full automatic approval decision.",
+        )
+
+
+====================================================================================================
+FILE: backend/app/services/invoice_parser.py
+====================================================================================================
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+
+from app.schemas.approval import ExtractedLineItem
+from app.utils.text_utils import lines, to_float
+
+
+@dataclass
+class ParsedInvoice:
+    line_items: list[ExtractedLineItem]
+    subtotal: float | None
+    tax: float | None
+    fees: float | None
+    grand_total: float | None
+    invoice_number: str | None
+    invoice_date: str | None
+    vendor_name: str | None
+
+
+class InvoiceParser:
+    MONEY_REGEX = re.compile(r"\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)")
+    DATE_REGEX = re.compile(r"\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b")
+
+    def parse(self, text: str) -> ParsedInvoice:
+        raw_lines = lines(text)
+        line_items: list[ExtractedLineItem] = []
+        subtotal = tax = fees = grand_total = None
+        invoice_number = invoice_date = vendor_name = None
+
+        for index, line in enumerate(raw_lines[:12]):
+            lower = line.lower()
+            if index == 0 and len(line.split()) <= 8:
+                vendor_name = line
+            if "invoice" in lower and not invoice_number:
+                possible_number = self._extract_after_keywords(line, ["invoice #", "invoice no", "invoice number", "invoice"])
+                invoice_number = possible_number or invoice_number
+            if not invoice_date:
+                date_match = self.DATE_REGEX.search(line)
+                if date_match:
+                    invoice_date = date_match.group(1)
+
+        for line in raw_lines:
+            lower = line.lower()
+            values = [to_float(match) for match in self.MONEY_REGEX.findall(line)]
+            values = [value for value in values if value is not None]
+
+            if any(key in lower for key in ["subtotal", "sub total"]):
+                subtotal = values[-1] if values else subtotal
+                continue
+            if "tax" in lower:
+                tax = values[-1] if values else tax
+                continue
+            if any(key in lower for key in ["fee", "freight", "delivery", "misc charge"]):
+                fees = values[-1] if values else fees
+                continue
+            if any(key in lower for key in ["total due", "grand total", "balance due", "amount due", "invoice total", "total"]):
+                if values:
+                    grand_total = values[-1]
+                continue
+
+            item = self._parse_line_item(line)
+            if item:
+                line_items.append(item)
+
+        return ParsedInvoice(
+            line_items=line_items,
+            subtotal=subtotal,
+            tax=tax,
+            fees=fees,
+            grand_total=grand_total,
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            vendor_name=vendor_name,
+        )
+
+    def _parse_line_item(self, line: str) -> ExtractedLineItem | None:
+        values = [to_float(match) for match in self.MONEY_REGEX.findall(line)]
+        values = [value for value in values if value is not None]
+
+        qty_match = re.search(r"\b(\d+(?:\.\d+)?)\b", line)
+        quantity = float(qty_match.group(1)) if qty_match else None
+
+        if len(values) >= 2:
+            unit_price = values[-2]
+            line_total = values[-1]
+            description = line
+            if qty_match:
+                description = line.replace(qty_match.group(0), "", 1).strip(" -|\t")
+            return ExtractedLineItem(
+                description=description[:160] or line[:160],
+                quantity=quantity,
+                unit_price=unit_price,
+                line_total=line_total,
+                raw_line=line,
+            )
+        return None
+
+    def _extract_after_keywords(self, line: str, keywords: list[str]) -> str | None:
+        lower = line.lower()
+        for keyword in keywords:
+            if keyword in lower:
+                idx = lower.index(keyword) + len(keyword)
+                candidate = line[idx:].strip(" :#-")
+                if candidate:
+                    return candidate[:80]
+        return None
+
+
+====================================================================================================
+FILE: backend/app/services/llm_service.py
+====================================================================================================
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+
+from openai import OpenAI
+
+from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+
+class LLMService:
+    def __init__(self) -> None:
+        self.enabled = bool(settings.openai_api_key)
+        self.client = OpenAI(api_key=settings.openai_api_key) if self.enabled else None
+
+    def explain_ambiguity(self, task: str, context: dict[str, Any]) -> tuple[bool, dict[str, Any] | None]:
+        if not self.enabled or self.client is None:
+            return False, None
+
+        prompt = {
+            "task": task,
+            "context": context,
+            "rules": [
+                "Never override deterministic failures.",
+                "Return conservative interpretations only.",
+                "If uncertain, say uncertain.",
+            ],
+            "output_format": {
+                "interpretation": "string",
+                "uncertain": "boolean",
+                "notes": ["string"],
+            },
+        }
+
+        try:
+            response = self.client.responses.create(
+                model=settings.openai_model,
+                input=[
+                    {
+                        "role": "system",
+                        "content": "You are a cautious AP/AR assistant. Be conservative and concise.",
+                    },
+                    {"role": "user", "content": json.dumps(prompt)},
+                ],
+                temperature=0.1,
+            )
+            text = response.output_text.strip()
+            return True, json.loads(text)
+        except Exception as exc:
+            logger.warning("LLM fallback failed: %s", exc)
+            return False, None
+
+
+====================================================================================================
+FILE: backend/app/services/pdf_extraction.py
+====================================================================================================
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from pathlib import Path
+
+import fitz
+import pdfplumber
+import pytesseract
+from PIL import Image
+from pypdf import PdfReader
+
+from app.core.config import get_settings
+from app.schemas.approval import ExtractedDocumentData
+from app.utils.text_utils import normalize_whitespace
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+
+@dataclass
+class ExtractedTextResult:
+    text: str
+    method: str
+    quality_score: float
+    preview: str
+
+
+class PDFExtractionService:
+    def __init__(self) -> None:
+        if settings.tesseract_cmd:
+            pytesseract.pytesseract.tesseract_cmd = settings.tesseract_cmd
+
+    def extract_document(self, path: Path, source_name: str) -> tuple[str, ExtractedDocumentData]:
+        text_result = self._extract_native_text(path)
+        ocr_result = None
+
+        if text_result.quality_score < 0.45:
+            ocr_result = self._extract_ocr_text(path)
+
+        if ocr_result and len(ocr_result.text) > len(text_result.text):
+            combined = self._merge_texts(text_result.text, ocr_result.text)
+            method = "text+ocr" if text_result.text else "ocr"
+            quality = max(text_result.quality_score, ocr_result.quality_score)
+            preview = normalize_whitespace(combined[:700])
+            text = combined
+        else:
+            text = text_result.text
+            method = text_result.method
+            quality = text_result.quality_score
+            preview = text_result.preview
+
+        if not text.strip() and ocr_result:
+            text = ocr_result.text
+            method = ocr_result.method
+            quality = ocr_result.quality_score
+            preview = ocr_result.preview
+
+        details = ExtractedDocumentData(
+            source_name=source_name,
+            extraction_method=method,
+            text_quality_score=round(quality, 2),
+            raw_text_preview=preview,
+            key_fields={},
+        )
+        return text, details
+
+    def _extract_native_text(self, path: Path) -> ExtractedTextResult:
+        chunks: list[str] = []
+
+        try:
+            with pdfplumber.open(path) as pdf:
+                for page in pdf.pages:
+                    chunks.append(page.extract_text() or "")
+        except Exception as exc:
+            logger.warning("pdfplumber failed for %s: %s", path.name, exc)
+
+        if not " ".join(chunks).strip():
+            try:
+                reader = PdfReader(str(path))
+                chunks = [(page.extract_text() or "") for page in reader.pages]
+            except Exception as exc:
+                logger.warning("pypdf failed for %s: %s", path.name, exc)
+
+        text = "\n".join(chunks).strip()
+        score = self._estimate_quality(text)
+        return ExtractedTextResult(
+            text=text,
+            method="text",
+            quality_score=score,
+            preview=normalize_whitespace(text[:700]),
+        )
+
+    def _extract_ocr_text(self, path: Path) -> ExtractedTextResult:
+        chunks: list[str] = []
+        try:
+            document = fitz.open(str(path))
+            for page_number in range(len(document)):
+                page = document.load_page(page_number)
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                image_bytes = pix.tobytes("png")
+                image = Image.open(__import__("io").BytesIO(image_bytes))
+                text = pytesseract.image_to_string(image)
+                chunks.append(text)
+        except Exception as exc:
+            logger.warning("OCR failed for %s: %s", path.name, exc)
+
+        text = "\n".join(chunks).strip()
+        score = self._estimate_quality(text) * 0.85 if text else 0.0
+        return ExtractedTextResult(
+            text=text,
+            method="ocr",
+            quality_score=score,
+            preview=normalize_whitespace(text[:700]),
+        )
+
+    def _estimate_quality(self, text: str) -> float:
+        if not text:
+            return 0.0
+        length_score = min(len(text) / 1600, 1.0)
+        word_count = len(text.split())
+        word_score = min(word_count / 220, 1.0)
+        alnum_ratio = sum(char.isalnum() or char.isspace() for char in text) / max(len(text), 1)
+        return round((length_score * 0.35) + (word_score * 0.35) + (alnum_ratio * 0.30), 2)
+
+    def _merge_texts(self, first: str, second: str) -> str:
+        if not first:
+            return second
+        if not second:
+            return first
+        return first + "\n\n---- OCR FALLBACK ----\n\n" + second
+
+
+====================================================================================================
+FILE: backend/app/services/pricing_checker.py
+====================================================================================================
+from __future__ import annotations
+
+from rapidfuzz import fuzz
+
+from app.schemas.approval import ExtractedLineItem, StageResult
+from app.services.llm_service import LLMService
+from app.services.pricing_parser import PricingRule
+from app.utils.text_utils import clean_token
+
+
+class PricingChecker:
+    def __init__(self) -> None:
+        self.llm_service = LLMService()
+
+    def check(self, invoice_lines: list[ExtractedLineItem], pricing_rules: list[PricingRule]) -> StageResult:
+        if not pricing_rules:
+            return StageResult(
+                name="Pricing Breakdown Check",
+                status="Requires Human Review",
+                confidence=0.3,
+                summary="No pricing breakdown document was uploaded for comparison.",
+                explanation="This stage cannot be safely approved without company pricing support.",
+                issues_found=[],
+                warnings=["Pricing comparison was skipped because no pricing breakdown was provided."],
+                extracted_data={"matches": [], "mismatches": [], "unclear": []},
+                llm_used=False,
+            )
+
+        matches: list[dict] = []
+        mismatches: list[dict] = []
+        unclear: list[dict] = []
+        llm_used = False
+
+        for invoice_item in invoice_lines:
+            if invoice_item.unit_price is None:
+                unclear.append(
+                    {
+                        "invoice_item": invoice_item.description,
+                        "reason": "Unit price could not be parsed from the invoice line.",
+                    }
+                )
+                continue
+
+            normalized_invoice = clean_token(invoice_item.description)
+            best_score = 0
+            best_rule: PricingRule | None = None
+            for rule in pricing_rules:
+                score = fuzz.token_set_ratio(normalized_invoice, clean_token(rule.description))
+                if score > best_score:
+                    best_score = score
+                    best_rule = rule
+
+            if best_rule and best_score >= 84:
+                if abs(invoice_item.unit_price - best_rule.unit_rate) <= 0.01:
+                    matches.append(
+                        {
+                            "invoice_item": invoice_item.description,
+                            "invoice_unit_price": invoice_item.unit_price,
+                            "pricing_rule": best_rule.description,
+                            "expected_rate": best_rule.unit_rate,
+                            "score": best_score,
+                        }
+                    )
+                else:
+                    mismatches.append(
+                        {
+                            "invoice_item": invoice_item.description,
+                            "invoice_unit_price": invoice_item.unit_price,
+                            "pricing_rule": best_rule.description,
+                            "expected_rate": best_rule.unit_rate,
+                            "score": best_score,
+                        }
+                    )
+            elif best_rule and 68 <= best_score < 84:
+                used, interpretation = self.llm_service.explain_ambiguity(
+                    "Determine whether an invoice line item likely maps to a pricing rule.",
+                    {
+                        "invoice_item": invoice_item.model_dump(),
+                        "candidate_rule": best_rule.__dict__,
+                        "fuzzy_score": best_score,
+                    },
+                )
+                llm_used = llm_used or used
+                if interpretation and not interpretation.get("uncertain", True):
+                    unclear.append(
+                        {
+                            "invoice_item": invoice_item.description,
+                            "reason": interpretation.get("interpretation"),
+                            "best_score": best_score,
+                        }
+                    )
+                else:
+                    unclear.append(
+                        {
+                            "invoice_item": invoice_item.description,
+                            "reason": "Closest pricing rule was too ambiguous for safe automatic approval.",
+                            "best_score": best_score,
+                        }
+                    )
+            else:
+                unclear.append(
+                    {
+                        "invoice_item": invoice_item.description,
+                        "reason": "No strong pricing rule match was found.",
+                        "best_score": best_score,
+                    }
+                )
+
+        total = len(invoice_lines)
+        mismatch_count = len(mismatches)
+        match_count = len(matches)
+        unclear_count = len(unclear)
+        confidence = min(0.93, 0.32 + ((match_count / total) if total else 0) * 0.55)
+        if unclear_count:
+            confidence -= 0.08
+        confidence = max(0.2, confidence)
+
+        if total == 0:
+            status = "Requires Human Review"
+            summary = "No invoice line items were parsed for pricing comparison."
+            explanation = "The system could not safely identify invoice lines to compare against pricing rules."
+        elif mismatch_count > 0:
+            status = "Not Approved"
+            summary = "One or more invoice prices do not match the pricing breakdown."
+            explanation = "At least one deterministically matched item had a price different from the expected company rate."
+        elif match_count == total and unclear_count == 0:
+            status = "Approved"
+            summary = "All parsed invoice prices match the pricing breakdown."
+            explanation = "Each invoice line with a recognized pricing rule matched the expected unit rate."
+        elif match_count > 0:
+            status = "Partially Approved"
+            summary = "Some invoice prices matched the pricing breakdown, but others were unclear."
+            explanation = "The system found valid pricing support for part of the invoice, but not for every line."
+        else:
+            status = "Requires Human Review"
+            summary = "Pricing support was too ambiguous for automatic approval."
+            explanation = "The pricing breakdown did not map cleanly enough to the invoice for a safe decision."
+
+        return StageResult(
+            name="Pricing Breakdown Check",
+            status=status,
+            confidence=round(confidence, 2),
+            summary=summary,
+            explanation=explanation,
+            issues_found=[
+                f"{item['invoice_item']}: expected {item['expected_rate']:.2f}, found {item['invoice_unit_price']:.2f}."
+                for item in mismatches[:20]
+            ],
+            warnings=[item["reason"] for item in unclear[:20]],
+            extracted_data={
+                "matches": matches[:30],
+                "mismatches": mismatches[:30],
+                "unclear": unclear[:30],
+            },
+            llm_used=llm_used,
+        )
+
+
+====================================================================================================
+FILE: backend/app/services/pricing_parser.py
+====================================================================================================
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+
+from app.utils.text_utils import lines, to_float
+
+
+@dataclass
+class PricingRule:
+    description: str
+    unit_rate: float
+    raw_line: str
+
+
+class PricingParser:
+    MONEY_REGEX = re.compile(r"\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)")
+
+    def parse(self, text: str) -> list[PricingRule]:
+        rules: list[PricingRule] = []
+        for line in lines(text):
+            values = [to_float(match) for match in self.MONEY_REGEX.findall(line)]
+            values = [value for value in values if value is not None]
+            if not values:
+                continue
+            description = re.sub(self.MONEY_REGEX, "", line).strip(" -|\t")
+            if len(description) < 3:
+                continue
+            rules.append(
+                PricingRule(
+                    description=description[:160],
+                    unit_rate=values[-1],
+                    raw_line=line,
+                )
+            )
+        return rules
+
+
+====================================================================================================
+FILE: backend/app/services/ticket_matcher.py
+====================================================================================================
+from __future__ import annotations
+
+from rapidfuzz import fuzz
+
+from app.schemas.approval import ExtractedLineItem, StageResult
+from app.services.llm_service import LLMService
+from app.services.ticket_parser import TicketEntry
+from app.utils.text_utils import clean_token
+
+
+class TicketMatcher:
+    def __init__(self) -> None:
+        self.llm_service = LLMService()
+
+    def check(self, invoice_lines: list[ExtractedLineItem], ticket_entries: list[TicketEntry]) -> StageResult:
+        if not ticket_entries:
+            return StageResult(
+                name="Ticket Match Check",
+                status="Requires Human Review",
+                confidence=0.3,
+                summary="No ticket documents were uploaded for comparison.",
+                explanation="This stage cannot be safely approved without ticket support documents.",
+                issues_found=[],
+                warnings=["Ticket comparison was skipped because no tickets were provided."],
+                extracted_data={"matches": [], "missing": [], "extra_invoice_items": []},
+                llm_used=False,
+            )
+
+        matches: list[dict] = []
+        missing: list[dict] = []
+        extra: list[dict] = []
+        warnings: list[str] = []
+        llm_used = False
+
+        for invoice_item in invoice_lines:
+            normalized_invoice = clean_token(invoice_item.description)
+            best_score = 0
+            best_match: TicketEntry | None = None
+
+            for ticket_entry in ticket_entries:
+                score = fuzz.token_set_ratio(normalized_invoice, clean_token(ticket_entry.description))
+                if score > best_score:
+                    best_score = score
+                    best_match = ticket_entry
+
+            quantity_aligned = True
+            if best_match and invoice_item.quantity is not None and best_match.quantity is not None:
+                quantity_aligned = abs(invoice_item.quantity - best_match.quantity) <= 0.01
+
+            if best_match and best_score >= 82 and quantity_aligned:
+                matches.append(
+                    {
+                        "invoice_item": invoice_item.description,
+                        "ticket_item": best_match.description,
+                        "score": best_score,
+                        "quantity_match": quantity_aligned,
+                    }
+                )
+            elif best_match and 65 <= best_score < 82:
+                used, interpretation = self.llm_service.explain_ambiguity(
+                    "Determine whether an invoice item likely matches a ticket item.",
+                    {
+                        "invoice_item": invoice_item.model_dump(),
+                        "candidate_ticket": best_match.__dict__,
+                        "fuzzy_score": best_score,
+                    },
+                )
+                llm_used = llm_used or used
+                if interpretation and not interpretation.get("uncertain", True):
+                    warnings.append(
+                        f"Possible ticket support for '{invoice_item.description}' required fallback interpretation."
+                    )
+                    matches.append(
+                        {
+                            "invoice_item": invoice_item.description,
+                            "ticket_item": best_match.description,
+                            "score": best_score,
+                            "quantity_match": quantity_aligned,
+                            "llm_note": interpretation.get("interpretation"),
+                        }
+                    )
+                else:
+                    missing.append(
+                        {
+                            "invoice_item": invoice_item.description,
+                            "reason": "Closest ticket match was too ambiguous for safe approval.",
+                            "best_score": best_score,
+                        }
+                    )
+            else:
+                missing.append(
+                    {
+                        "invoice_item": invoice_item.description,
+                        "reason": "No strong ticket support was found.",
+                        "best_score": best_score,
+                    }
+                )
+
+        ticket_descriptions = {clean_token(entry.description) for entry in ticket_entries}
+        for entry in ticket_entries:
+            used = False
+            normalized_ticket = clean_token(entry.description)
+            for matched in matches:
+                if clean_token(matched["ticket_item"]) == normalized_ticket:
+                    used = True
+                    break
+            if not used and normalized_ticket in ticket_descriptions:
+                extra.append({"ticket_item": entry.description, "note": "Ticket entry was not clearly billed on the invoice."})
+
+        total_invoice_items = len(invoice_lines)
+        matched_count = len(matches)
+        coverage = (matched_count / total_invoice_items) if total_invoice_items else 0
+        confidence = min(0.92, 0.3 + coverage * 0.55 + (0.05 if not warnings else 0))
+
+        if total_invoice_items == 0:
+            status = "Requires Human Review"
+            summary = "No invoice line items were parsed for ticket comparison."
+            explanation = "The system could not safely identify billable lines to compare against the tickets."
+        elif matched_count == total_invoice_items and not warnings:
+            status = "Approved"
+            summary = "All parsed invoice items were supported by ticket documents."
+            explanation = "Each invoice line had a strong ticket match with acceptable similarity and quantity alignment."
+        elif matched_count > 0 and matched_count < total_invoice_items:
+            status = "Partially Approved"
+            summary = "Some invoice items were supported by tickets, but others were missing or unclear."
+            explanation = "At least one invoice line matched tickets, but full support was not established for the whole invoice."
+        elif warnings:
+            status = "Requires Human Review"
+            summary = "Ticket support may exist, but it was too ambiguous for automatic approval."
+            explanation = "Fallback interpretation was needed, so a human should confirm the mapping."
+        else:
+            status = "Not Approved"
+            summary = "The invoice is not adequately supported by the uploaded tickets."
+            explanation = "No strong ticket matches were found for one or more billed items."
+
+        return StageResult(
+            name="Ticket Match Check",
+            status=status,
+            confidence=round(confidence, 2),
+            summary=summary,
+            explanation=explanation,
+            issues_found=[item["reason"] if "reason" in item else item["note"] for item in missing[:20]],
+            warnings=warnings,
+            extracted_data={
+                "matches": matches[:30],
+                "missing": missing[:30],
+                "extra_invoice_items": [],
+                "unused_ticket_entries": extra[:30],
+            },
+            llm_used=llm_used,
+        )
+
+
+====================================================================================================
+FILE: backend/app/services/ticket_parser.py
+====================================================================================================
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+
+from app.utils.text_utils import clean_token, lines, to_float
+
+
+@dataclass
+class TicketEntry:
+    description: str
+    quantity: float | None
+    date: str | None
+    identifier: str | None
+    raw_line: str
+
+
+class TicketParser:
+    DATE_REGEX = re.compile(r"\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b")
+    ID_REGEX = re.compile(r"\b(?:ticket|load|delivery|job|ref)\s*#?\s*([a-z0-9-]+)", re.IGNORECASE)
+
+    def parse(self, text: str) -> list[TicketEntry]:
+        entries: list[TicketEntry] = []
+        for line in lines(text):
+            if len(line) < 5:
+                continue
+            qty_match = re.search(r"\b(\d+(?:\.\d+)?)\b", line)
+            quantity = to_float(qty_match.group(1)) if qty_match else None
+            date_match = self.DATE_REGEX.search(line)
+            id_match = self.ID_REGEX.search(line)
+            normalized = clean_token(line)
+            if any(keyword in normalized for keyword in ["ticket", "delivery", "material", "service", "labor", "haul", "concrete", "dump", "load"]):
+                entries.append(
+                    TicketEntry(
+                        description=line[:180],
+                        quantity=quantity,
+                        date=date_match.group(1) if date_match else None,
+                        identifier=id_match.group(1) if id_match else None,
+                        raw_line=line,
+                    )
+                )
+        return entries
+
+
+====================================================================================================
+FILE: backend/app/storage/extracted/.gitkeep
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/storage/results/.gitkeep
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/storage/uploads/.gitkeep
+====================================================================================================
+
+
+====================================================================================================
+FILE: backend/app/utils/file_utils.py
+====================================================================================================
+from __future__ import annotations
+
+import shutil
+import uuid
+from pathlib import Path
+
+from fastapi import UploadFile
+
+
+ALLOWED_EXTENSIONS = {".pdf"}
+
+
+async def save_upload(upload: UploadFile, target_dir: Path) -> Path:
+    suffix = Path(upload.filename or "upload.pdf").suffix.lower()
+    if suffix not in ALLOWED_EXTENSIONS:
+        raise ValueError(f"Unsupported file type: {suffix}")
+
+    safe_name = f"{uuid.uuid4().hex}_{Path(upload.filename or 'file.pdf').name}"
+    destination = target_dir / safe_name
+    with destination.open("wb") as buffer:
+        shutil.copyfileobj(upload.file, buffer)
+    await upload.close()
+    return destination
+
+
+====================================================================================================
+FILE: backend/app/utils/text_utils.py
+====================================================================================================
+from __future__ import annotations
+
+import re
+from decimal import Decimal, InvalidOperation
+
+
+def normalize_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def lines(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def to_float(value: str | float | int | None) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (float, int)):
+        return float(value)
+
+    cleaned = value.replace(",", "").replace("$", "").strip()
+    if cleaned in {"", ".", "-"}:
+        return None
+
+    try:
+        return float(Decimal(cleaned))
+    except (InvalidOperation, ValueError):
+        return None
+
+
+MONEY_PATTERN = re.compile(r"\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)")
+
+
+def extract_money_values(text: str) -> list[float]:
+    values: list[float] = []
+    for match in MONEY_PATTERN.findall(text):
+        value = to_float(match)
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def clean_token(token: str) -> str:
+    token = token.lower().strip()
+    token = re.sub(r"[^a-z0-9\s\-/]", "", token)
+    return normalize_whitespace(token)
+
+
+====================================================================================================
+FILE: backend/requirements.txt
+====================================================================================================
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic-settings==2.8.1
+pdfplumber==0.11.5
+pypdf==5.4.0
+PyMuPDF==1.25.5
+pytesseract==0.3.13
+rapidfuzz==3.13.0
+openai==1.75.0
+python-dotenv==1.0.1
+reportlab==4.4.1
+Pillow==11.2.1
+
+
+====================================================================================================
+FILE: frontend/.env.local.example
+====================================================================================================
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+
+
+====================================================================================================
+FILE: frontend/app/globals.css
+====================================================================================================
+:root {
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --border: #d7deea;
+  --text: #162130;
+  --muted: #657387;
+  --accent: #1e5eff;
+  --approved: #0a7f3f;
+  --approved-bg: #e8f8ef;
+  --partial: #2e7d32;
+  --partial-bg: #eef9ef;
+  --review: #9a6700;
+  --review-bg: #fff6db;
+  --rejected: #b42318;
+  --rejected-bg: #fdecec;
+  --shadow: 0 12px 32px rgba(22, 33, 48, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.page-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.hero {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.hero h1 {
+  margin: 0 0 12px;
+  font-size: 36px;
+  line-height: 1.15;
+}
+
+.hero-copy {
+  margin: 0;
+  max-width: 860px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.left-column,
+.right-column,
+.results-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.panel-header h3,
+.panel h2,
+.panel h3,
+.panel h4 {
+  margin-top: 0;
+}
+
+.panel-header p,
+.helper-text,
+.block-text,
+.stage-head p,
+.document-card p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.upload-box {
+  display: block;
+  border: 1.5px dashed var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fbfcff;
+}
+
+.upload-box input {
+  display: none;
+}
+
+.file-list,
+.bullet-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.run-button {
+  width: 100%;
+  border: 0;
+  background: var(--accent);
+  color: white;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.run-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: var(--rejected);
+  font-weight: 600;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status.approved {
+  background: var(--approved-bg);
+  color: var(--approved);
+}
+
+.status.partial {
+  background: var(--partial-bg);
+  color: var(--partial);
+}
+
+.status.review {
+  background: var(--review-bg);
+  color: var(--review);
+}
+
+.status.rejected {
+  background: var(--rejected-bg);
+  color: var(--rejected);
+}
+
+.stage-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.stage-meta,
+.summary-grid,
+.grid-two,
+.document-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.stage-meta,
+.summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.document-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.document-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background: #fbfcff;
+}
+
+.json-box {
+  background: #0f1720;
+  color: #d7e1ef;
+  border-radius: 14px;
+  padding: 14px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.empty-panel,
+.loading-panel {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 1080px) {
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-shell {
+    padding: 20px 14px 32px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+  }
+
+  .stage-meta,
+  .summary-grid,
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-head {
+    flex-direction: column;
+  }
+}
+
+
+====================================================================================================
+FILE: frontend/app/layout.tsx
+====================================================================================================
+import './globals.css';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Invoice Approval System',
+  description: 'Safety-first invoice review for AP/AR agents',
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+
+
+====================================================================================================
+FILE: frontend/app/page.tsx
+====================================================================================================
+'use client';
+
+import { useMemo, useState } from 'react';
+
+import { ResultsPanel } from '@/components/results-panel';
+import { UploadPanel } from '@/components/upload-panel';
+import { runApproval } from '@/lib/api';
+import { ApprovalResponse } from '@/lib/types';
+
+export default function HomePage() {
+  const [invoice, setInvoice] = useState<File | null>(null);
+  const [tickets, setTickets] = useState<File[]>([]);
+  const [pricingBreakdown, setPricingBreakdown] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ApprovalResponse | null>(null);
+
+  const invoiceFiles = useMemo(() => (invoice ? [invoice] : []), [invoice]);
+  const pricingFiles = useMemo(() => (pricingBreakdown ? [pricingBreakdown] : []), [pricingBreakdown]);
+
+  const handleRunApproval = async () => {
+    if (!invoice) {
+      setError('An invoice PDF is required.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setResult(null);
+      const response = await runApproval({ invoice, tickets, pricingBreakdown });
+      setResult(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong while running approval.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="page-shell">
+      <section className="hero">
+        <div>
+          <p className="eyebrow">Invoice Approval System</p>
+          <h1>Safety-first invoice review for AP/AR agents</h1>
+          <p className="hero-copy">
+            Upload one invoice, optionally add tickets and a pricing breakdown, then run a structured review across Calculation Check, Ticket Match Check, and Pricing Breakdown Check.
+          </p>
+        </div>
+      </section>
+
+      <section className="layout-grid">
+        <div className="left-column">
+          <UploadPanel
+            title="Invoice PDF"
+            description="Required. Upload the invoice to review."
+            files={invoiceFiles}
+            onChange={(files) => setInvoice(files[0] || null)}
+          />
+
+          <UploadPanel
+            title="Ticket PDFs"
+            description="Optional. Upload zero or more ticket PDFs for support matching."
+            multiple
+            files={tickets}
+            onChange={setTickets}
+          />
+
+          <UploadPanel
+            title="Pricing Breakdown PDF"
+            description="Optional. Upload a pricing or rate sheet to verify unit prices."
+            files={pricingFiles}
+            onChange={(files) => setPricingBreakdown(files[0] || null)}
+          />
+
+          <section className="panel action-panel">
+            <button className="run-button" onClick={handleRunApproval} disabled={loading}>
+              {loading ? 'Running Approval...' : 'Run Approval'}
+            </button>
+            <p className="helper-text">
+              The system uses deterministic checks first, then OCR, and only uses LLM interpretation as a fallback when configured.
+            </p>
+            {error ? <p className="error-text">{error}</p> : null}
+          </section>
+        </div>
+
+        <div className="right-column">
+          {loading ? (
+            <section className="panel loading-panel">
+              <h3>Review in progress</h3>
+              <p>The backend is extracting text, checking calculations, comparing tickets, and validating pricing.</p>
+            </section>
+          ) : null}
+
+          {!loading && result ? (
+            <ResultsPanel result={result} />
+          ) : !loading ? (
+            <section className="panel empty-panel">
+              <h3>No review yet</h3>
+              <p>Upload your documents and click Run Approval to see a stage-by-stage result.</p>
+            </section>
+          ) : null}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+
+====================================================================================================
+FILE: frontend/components/file-list.tsx
+====================================================================================================
+export function FileList({ files }: { files: File[] }) {
+  if (files.length === 0) {
+    return <p className="helper-text">No files selected.</p>;
+  }
+
+  return (
+    <ul className="file-list">
+      {files.map((file) => (
+        <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>
+      ))}
+    </ul>
+  );
+}
+
+
+====================================================================================================
+FILE: frontend/components/results-panel.tsx
+====================================================================================================
+import { StatusBadge } from '@/components/status-badge';
+import { StageCard } from '@/components/stage-card';
+import { ApprovalResponse } from '@/lib/types';
+
+export function ResultsPanel({ result }: { result: ApprovalResponse }) {
+  return (
+    <div className="results-stack">
+      <section className="panel overall-panel">
+        <div className="stage-head">
+          <div>
+            <h2>Overall Invoice Status</h2>
+            <p>{result.overall_summary}</p>
+          </div>
+          <StatusBadge status={result.overall_status} />
+        </div>
+        <p className="block-text">{result.overall_explanation}</p>
+        <div className="summary-grid">
+          <div>
+            <strong>Invoice File</strong>
+            <span>{result.invoice_filename}</span>
+          </div>
+          <div>
+            <strong>Stages</strong>
+            <span>{result.stages.length}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <h3>Extraction Details</h3>
+        <div className="document-grid">
+          {result.extraction_details.map((detail) => (
+            <article key={detail.source_name} className="document-card">
+              <h4>{detail.source_name}</h4>
+              <p>
+                <strong>Method:</strong> {detail.extraction_method}
+              </p>
+              <p>
+                <strong>Text quality:</strong> {Math.round(detail.text_quality_score * 100)}%
+              </p>
+              <p className="helper-text">{detail.raw_text_preview || 'No preview available.'}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {result.stages.map((stage) => (
+        <StageCard key={stage.name} stage={stage} />
+      ))}
+    </div>
+  );
+}
+
+
+====================================================================================================
+FILE: frontend/components/stage-card.tsx
+====================================================================================================
+import { StatusBadge } from '@/components/status-badge';
+import { StageResult } from '@/lib/types';
+
+export function StageCard({ stage }: { stage: StageResult }) {
+  return (
+    <section className="panel stage-card">
+      <div className="stage-head">
+        <div>
+          <h3>{stage.name}</h3>
+          <p>{stage.summary}</p>
+        </div>
+        <StatusBadge status={stage.status} />
+      </div>
+
+      <div className="stage-meta">
+        <div>
+          <strong>Confidence</strong>
+          <span>{Math.round(stage.confidence * 100)}%</span>
+        </div>
+        <div>
+          <strong>LLM fallback</strong>
+          <span>{stage.llm_used ? 'Used' : 'Not used'}</span>
+        </div>
+      </div>
+
+      <p className="block-text">{stage.explanation}</p>
+
+      <div className="grid-two">
+        <div>
+          <h4>Issues Found</h4>
+          {stage.issues_found.length > 0 ? (
+            <ul className="bullet-list">
+              {stage.issues_found.map((issue, index) => (
+                <li key={`${stage.name}-issue-${index}`}>{issue}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="helper-text">No direct issues reported.</p>
+          )}
+        </div>
+        <div>
+          <h4>Warnings</h4>
+          {stage.warnings.length > 0 ? (
+            <ul className="bullet-list">
+              {stage.warnings.map((warning, index) => (
+                <li key={`${stage.name}-warning-${index}`}>{warning}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="helper-text">No warnings reported.</p>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <h4>Extracted Data</h4>
+        <pre className="json-box">{JSON.stringify(stage.extracted_data, null, 2)}</pre>
+      </div>
+    </section>
+  );
+}
+
+
+====================================================================================================
+FILE: frontend/components/status-badge.tsx
+====================================================================================================
+import { ApprovalStatus } from '@/lib/types';
+
+const statusClassMap: Record<ApprovalStatus, string> = {
+  Approved: 'status approved',
+  'Partially Approved': 'status partial',
+  'Requires Human Review': 'status review',
+  'Not Approved': 'status rejected',
+};
+
+export function StatusBadge({ status }: { status: ApprovalStatus }) {
+  return <span className={statusClassMap[status]}>{status}</span>;
+}
+
+
+====================================================================================================
+FILE: frontend/components/upload-panel.tsx
+====================================================================================================
+'use client';
+
+import { ChangeEvent } from 'react';
+
+import { FileList } from '@/components/file-list';
+
+type UploadPanelProps = {
+  title: string;
+  description: string;
+  multiple?: boolean;
+  accept?: string;
+  files: File[];
+  onChange: (files: File[]) => void;
+};
+
+export function UploadPanel({
+  title,
+  description,
+  multiple = false,
+  accept = '.pdf',
+  files,
+  onChange,
+}: UploadPanelProps) {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    onChange(selected);
+  };
+
+  return (
+    <section className="panel">
+      <div className="panel-header">
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <label className="upload-box">
+        <input type="file" accept={accept} multiple={multiple} onChange={handleChange} />
+        <span>{multiple ? 'Choose PDF files' : 'Choose PDF file'}</span>
+      </label>
+      <FileList files={files} />
+    </section>
+  );
+}
+
+
+====================================================================================================
+FILE: frontend/lib/api.ts
+====================================================================================================
+import { ApprovalResponse } from '@/lib/types';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+
+export async function runApproval(input: {
+  invoice: File;
+  tickets: File[];
+  pricingBreakdown: File | null;
+}): Promise<ApprovalResponse> {
+  const formData = new FormData();
+  formData.append('invoice', input.invoice);
+  input.tickets.forEach((ticket) => formData.append('tickets', ticket));
+  if (input.pricingBreakdown) {
+    formData.append('pricing_breakdown', input.pricingBreakdown);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/approve`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ detail: 'Unknown server error' }));
+    throw new Error(body.detail || 'Approval request failed');
+  }
+
+  return response.json();
+}
+
+
+====================================================================================================
+FILE: frontend/lib/types.ts
+====================================================================================================
+export type ApprovalStatus =
+  | 'Approved'
+  | 'Partially Approved'
+  | 'Requires Human Review'
+  | 'Not Approved';
+
+export type StageResult = {
+  name: 'Calculation Check' | 'Ticket Match Check' | 'Pricing Breakdown Check';
+  status: ApprovalStatus;
+  confidence: number;
+  summary: string;
+  explanation: string;
+  issues_found: string[];
+  warnings: string[];
+  extracted_data: Record<string, unknown>;
+  llm_used: boolean;
+};
+
+export type ExtractedDocumentData = {
+  source_name: string;
+  extraction_method: 'text' | 'ocr' | 'text+ocr';
+  text_quality_score: number;
+  key_fields: Record<string, unknown>;
+  raw_text_preview: string;
+};
+
+export type ApprovalResponse = {
+  overall_status: ApprovalStatus;
+  overall_summary: string;
+  overall_explanation: string;
+  invoice_filename: string;
+  stages: StageResult[];
+  extraction_details: ExtractedDocumentData[];
+};
+
+
+====================================================================================================
+FILE: frontend/next-env.d.ts
+====================================================================================================
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+
+// This file should not be edited.
+
+
+====================================================================================================
+FILE: frontend/next.config.js
+====================================================================================================
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+};
+
+module.exports = nextConfig;
+
+
+====================================================================================================
+FILE: frontend/package.json
+====================================================================================================
+{
+  "name": "invoice-approval-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.24",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.28",
+    "@types/react": "18.3.20",
+    "@types/react-dom": "18.3.6",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.24",
+    "typescript": "5.8.3"
+  }
+}
+
+
+====================================================================================================
+FILE: frontend/tsconfig.json
+====================================================================================================
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+
+====================================================================================================
+FILE: start-backend.bat
+====================================================================================================
+@echo off
+cd /d %~dp0backend
+python -m venv .venv
+call .venv\Scripts\activate
+pip install -r requirements.txt
+if not exist .env copy .env.example .env
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+
+====================================================================================================
+FILE: start-frontend.bat
+====================================================================================================
+@echo off
+cd /d %~dp0frontend
+if not exist .env.local copy .env.local.example .env.local
+npm install
+npm run dev
+
+
