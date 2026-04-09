@@ -2,27 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.schemas.approval import ApprovalResponse, ExtractedDocumentData
-from app.services.calculation_checker import CalculationChecker
-from app.services.confidence_service import ConfidenceService
-from app.services.invoice_parser import InvoiceParser
+from app.schemas.approval import ApprovalResponse, ExtractedDocumentData, StageResult
+from app.services.llm_service import LLMService
 from app.services.pdf_extraction import PDFExtractionService
-from app.services.pricing_checker import PricingChecker
-from app.services.pricing_parser import PricingParser
-from app.services.ticket_matcher import TicketMatcher
-from app.services.ticket_parser import TicketParser
 
 
 class ApprovalService:
     def __init__(self) -> None:
         self.pdf_extractor = PDFExtractionService()
-        self.invoice_parser = InvoiceParser()
-        self.ticket_parser = TicketParser()
-        self.pricing_parser = PricingParser()
-        self.calculation_checker = CalculationChecker()
-        self.ticket_matcher = TicketMatcher()
-        self.pricing_checker = PricingChecker()
-        self.confidence_service = ConfidenceService()
+        self.llm_service = LLMService()
 
     def run(
         self,
@@ -33,43 +21,63 @@ class ApprovalService:
         extraction_details: list[ExtractedDocumentData] = []
 
         invoice_text, invoice_details = self.pdf_extractor.extract_document(invoice_path, "Invoice")
-        extraction_details.append(invoice_details)
-        parsed_invoice = self.invoice_parser.parse(invoice_text)
         invoice_details.key_fields = {
-            "invoice_number": parsed_invoice.invoice_number,
-            "invoice_date": parsed_invoice.invoice_date,
-            "vendor_name": parsed_invoice.vendor_name,
-            "line_item_count": len(parsed_invoice.line_items),
-            "subtotal": parsed_invoice.subtotal,
-            "grand_total": parsed_invoice.grand_total,
+            "document_type": "invoice",
+            "filename": invoice_path.name,
+            "character_count": len(invoice_text),
+            "has_text": bool(invoice_text.strip()),
         }
+        extraction_details.append(invoice_details)
 
-        ticket_entries = []
+        ticket_documents: list[dict[str, str]] = []
         for ticket_path in ticket_paths:
-            text, details = self.pdf_extractor.extract_document(ticket_path, ticket_path.name)
-            entries = self.ticket_parser.parse(text)
-            details.key_fields = {"entry_count": len(entries)}
-            extraction_details.append(details)
-            ticket_entries.extend(entries)
+            ticket_text, ticket_details = self.pdf_extractor.extract_document(ticket_path, ticket_path.name)
+            ticket_details.key_fields = {
+                "document_type": "ticket",
+                "filename": ticket_path.name,
+                "character_count": len(ticket_text),
+                "has_text": bool(ticket_text.strip()),
+            }
+            extraction_details.append(ticket_details)
+            ticket_documents.append(
+                {
+                    "filename": ticket_path.name,
+                    "text": ticket_text,
+                }
+            )
 
-        pricing_rules = []
+        pricing_document: dict[str, str] | None = None
         if pricing_path is not None:
-            pricing_text, pricing_details = self.pdf_extractor.extract_document(pricing_path, pricing_path.name)
-            pricing_rules = self.pricing_parser.parse(pricing_text)
-            pricing_details.key_fields = {"rule_count": len(pricing_rules)}
+            pricing_text, pricing_details = self.pdf_extractor.extract_document(
+                pricing_path,
+                pricing_path.name,
+            )
+            pricing_details.key_fields = {
+                "document_type": "pricing_breakdown",
+                "filename": pricing_path.name,
+                "character_count": len(pricing_text),
+                "has_text": bool(pricing_text.strip()),
+            }
             extraction_details.append(pricing_details)
+            pricing_document = {
+                "filename": pricing_path.name,
+                "text": pricing_text,
+            }
 
-        calculation_stage = self.calculation_checker.check(parsed_invoice)
-        ticket_stage = self.ticket_matcher.check(parsed_invoice.line_items, ticket_entries)
-        pricing_stage = self.pricing_checker.check(parsed_invoice.line_items, pricing_rules)
-        stages = [calculation_stage, ticket_stage, pricing_stage]
+        llm_review = self.llm_service.review_invoice_documents(
+            invoice_filename=invoice_path.name,
+            invoice_text=invoice_text,
+            ticket_documents=ticket_documents,
+            pricing_document=pricing_document,
+            extraction_details=[detail.model_dump() for detail in extraction_details],
+        )
 
-        overall_status, overall_summary, overall_explanation = self.confidence_service.overall(stages)
+        stages = [StageResult(**stage) for stage in llm_review["stages"]]
 
         return ApprovalResponse(
-            overall_status=overall_status,
-            overall_summary=overall_summary,
-            overall_explanation=overall_explanation,
+            overall_status=llm_review["overall_status"],
+            overall_summary=llm_review["overall_summary"],
+            overall_explanation=llm_review["overall_explanation"],
             invoice_filename=invoice_path.name,
             stages=stages,
             extraction_details=extraction_details,

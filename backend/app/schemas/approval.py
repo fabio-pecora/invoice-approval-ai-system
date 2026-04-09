@@ -12,14 +12,6 @@ ApprovalStatus = Literal[
 ]
 
 
-class ExtractedLineItem(BaseModel):
-    description: str
-    quantity: float | None = None
-    unit_price: float | None = None
-    line_total: float | None = None
-    raw_line: str
-
-
 class ExtractedDocumentData(BaseModel):
     source_name: str
     extraction_method: Literal["text", "ocr", "text+ocr"]
@@ -41,7 +33,7 @@ class StageResult(BaseModel):
     issues_found: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     extracted_data: dict[str, Any] = Field(default_factory=dict)
-    llm_used: bool = False
+    llm_used: bool = True
 
 
 class ApprovalResponse(BaseModel):
