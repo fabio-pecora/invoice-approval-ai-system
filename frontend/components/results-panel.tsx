@@ -1,12 +1,9 @@
-import { ApprovalResponse, ExtractedDocumentData } from "@/lib/types";
+import {
+  ApprovalResponse,
+  ExtractedDocumentData,
+  StageResult,
+} from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
-import { StageCard } from "@/components/stage-card";
-
-function formatKey(value: string) {
-  return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 function formatValue(value: unknown) {
   if (value === null || value === undefined || value === "") {
@@ -17,163 +14,199 @@ function formatValue(value: unknown) {
     return value.length > 0 ? value.join(", ") : "Not found";
   }
 
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-
   return String(value);
 }
 
-function ExtractionCard({ detail }: { detail: ExtractedDocumentData }) {
-  const keyFieldEntries = Object.entries(detail.key_fields || {}).filter(
-    ([, value]) => {
-      if (value === null || value === undefined) return false;
-      if (typeof value === "string" && value.trim() === "") return false;
-      if (Array.isArray(value) && value.length === 0) return false;
-      return true;
-    },
+function getInvoiceDetail(detail?: ExtractedDocumentData) {
+  if (!detail) {
+    return {
+      vendorName: "Not found",
+      invoiceDate: "Not found",
+      invoiceTotal: "Not found",
+      preview: "No preview available.",
+    };
+  }
+
+  return {
+    vendorName: formatValue(detail.key_fields?.vendor_name),
+    invoiceDate: formatValue(detail.key_fields?.invoice_date),
+    invoiceTotal: formatValue(detail.key_fields?.invoice_total),
+    preview: detail.raw_text_preview || "No preview available.",
+  };
+}
+
+function getStageTone(status: string) {
+  if (status === "Approved") {
+    return {
+      bg: "#ecfdf5",
+      border: "#bbf7d0",
+      text: "#166534",
+      label: "Passed",
+    };
+  }
+
+  if (status === "Not Approved") {
+    return {
+      bg: "#fef2f2",
+      border: "#fecaca",
+      text: "#991b1b",
+      label: "Failed",
+    };
+  }
+
+  return {
+    bg: "#fffbeb",
+    border: "#fde68a",
+    text: "#92400e",
+    label: "Needs review",
+  };
+}
+
+function StageSummaryCard({ stage }: { stage: StageResult }) {
+  const tone = getStageTone(stage.status);
+
+  return (
+    <div
+      style={{
+        background: tone.bg,
+        border: `1px solid ${tone.border}`,
+        borderRadius: 16,
+        padding: 16,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: 0.35,
+          color: tone.text,
+          marginBottom: 8,
+        }}
+      >
+        {stage.name}
+      </div>
+
+      <div
+        style={{
+          fontSize: 20,
+          fontWeight: 800,
+          color: tone.text,
+          marginBottom: 8,
+        }}
+      >
+        {tone.label}
+      </div>
+
+      <div
+        style={{
+          color: "#334155",
+          lineHeight: 1.6,
+          fontSize: 14,
+        }}
+      >
+        {stage.summary}
+      </div>
+    </div>
   );
+}
+
+function InvoicePreview({ detail }: { detail?: ExtractedDocumentData }) {
+  const invoice = getInvoiceDetail(detail);
 
   return (
     <section
       style={{
         background: "#ffffff",
         border: "1px solid #e2e8f0",
-        borderRadius: 18,
+        borderRadius: 20,
         padding: 20,
         boxShadow: "0 10px 24px rgba(15, 23, 42, 0.05)",
-        minWidth: 0,
-        overflow: "hidden",
       }}
     >
+      <div style={{ marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 24, color: "#0f172a" }}>
+          Invoice details
+        </h3>
+      </div>
+
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: 12,
-          flexWrap: "wrap",
-          alignItems: "center",
-          marginBottom: 16,
-          minWidth: 0,
+          marginBottom: 18,
         }}
       >
-        <div style={{ minWidth: 0, flex: 1 }}>
+        <div
+          style={{
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 14,
+            padding: 14,
+          }}
+        >
           <div
             style={{
               fontSize: 12,
               fontWeight: 700,
-              letterSpacing: 0.4,
-              textTransform: "uppercase",
               color: "#64748b",
               marginBottom: 6,
             }}
           >
-            Extracted Document
+            Vendor name
           </div>
-          <h4
-            style={{
-              margin: 0,
-              fontSize: 20,
-              color: "#0f172a",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {detail.source_name}
-          </h4>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+            {invoice.vendorName}
+          </div>
         </div>
 
-        <div
-          style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12 }}
-        >
-          <span
-            style={{
-              background: "#eff6ff",
-              color: "#1d4ed8",
-              border: "1px solid #bfdbfe",
-              borderRadius: 999,
-              padding: "6px 10px",
-              fontWeight: 700,
-            }}
-          >
-            {detail.extraction_method.toUpperCase()}
-          </span>
-          <span
-            style={{
-              background: "#f8fafc",
-              color: "#334155",
-              border: "1px solid #e2e8f0",
-              borderRadius: 999,
-              padding: "6px 10px",
-              fontWeight: 700,
-            }}
-          >
-            Text quality {Math.round(detail.text_quality_score * 100)}%
-          </span>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 18 }}>
         <div
           style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: "#0f172a",
-            marginBottom: 10,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 14,
+            padding: 14,
           }}
         >
-          Key fields
-        </div>
-
-        {keyFieldEntries.length > 0 ? (
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#64748b",
+              marginBottom: 6,
             }}
           >
-            {keyFieldEntries.map(([key, value]) => (
-              <div
-                key={key}
-                style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 14,
-                  padding: 14,
-                  minWidth: 0,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#64748b",
-                    marginBottom: 6,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.3,
-                  }}
-                >
-                  {formatKey(key)}
-                </div>
-                <div
-                  style={{
-                    color: "#0f172a",
-                    lineHeight: 1.5,
-                    overflowWrap: "anywhere",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {formatValue(value)}
-                </div>
-              </div>
-            ))}
+            Date
           </div>
-        ) : (
-          <p style={{ margin: 0, color: "#64748b" }}>
-            No key fields were extracted from this document.
-          </p>
-        )}
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+            {invoice.invoiceDate}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 14,
+            padding: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#64748b",
+              marginBottom: 6,
+            }}
+          >
+            Total price
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+            {invoice.invoiceTotal}
+          </div>
+        </div>
       </div>
 
       <div>
@@ -185,7 +218,7 @@ function ExtractionCard({ detail }: { detail: ExtractedDocumentData }) {
             marginBottom: 10,
           }}
         >
-          Text preview
+          Invoice preview
         </div>
 
         <div
@@ -197,35 +230,260 @@ function ExtractionCard({ detail }: { detail: ExtractedDocumentData }) {
             fontSize: 13,
             lineHeight: 1.7,
             whiteSpace: "pre-wrap",
-            overflowWrap: "anywhere",
             wordBreak: "break-word",
+            overflowWrap: "anywhere",
             maxHeight: 260,
             overflowY: "auto",
-            width: "100%",
-            boxSizing: "border-box",
           }}
         >
-          {detail.raw_text_preview || "No preview available."}
+          {invoice.preview}
         </div>
       </div>
     </section>
   );
 }
 
-function getStatusCounts(result: ApprovalResponse) {
-  return {
-    approved: result.stages.filter((stage) => stage.status === "Approved")
-      .length,
-    review: result.stages.filter(
-      (stage) => stage.status === "Requires Human Review",
-    ).length,
-    rejected: result.stages.filter((stage) => stage.status === "Not Approved")
-      .length,
-  };
+function CalculationDetails({ stage }: { stage?: StageResult }) {
+  if (!stage) {
+    return null;
+  }
+
+  const aiCalculatedTotal = formatValue(
+    stage.extracted_data?.ai_calculated_total,
+  );
+  const invoiceTotalFound = formatValue(
+    stage.extracted_data?.invoice_total_found,
+  );
+
+  return (
+    <section
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 20,
+        padding: 20,
+        boxShadow: "0 10px 24px rgba(15, 23, 42, 0.05)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: 0.35,
+              color: "#64748b",
+              marginBottom: 6,
+            }}
+          >
+            Detailed review
+          </div>
+          <h3 style={{ margin: 0, fontSize: 24, color: "#0f172a" }}>
+            Calculation check
+          </h3>
+        </div>
+
+        <StatusBadge status={stage.status} />
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 12,
+          marginBottom: 18,
+        }}
+      >
+        <div
+          style={{
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: 14,
+            padding: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#1d4ed8",
+              marginBottom: 6,
+            }}
+          >
+            AI calculated total
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>
+            {aiCalculatedTotal}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 14,
+            padding: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#64748b",
+              marginBottom: 6,
+            }}
+          >
+            Invoice total
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>
+            {invoiceTotalFound}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          borderRadius: 14,
+          padding: 16,
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: "#475569",
+            textTransform: "uppercase",
+            letterSpacing: 0.3,
+            marginBottom: 8,
+          }}
+        >
+          Explanation
+        </div>
+        <p style={{ margin: 0, lineHeight: 1.75, color: "#334155" }}>
+          {stage.explanation}
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: 14,
+        }}
+      >
+        <div
+          style={{
+            background: "#fff7ed",
+            border: "1px solid #fed7aa",
+            borderRadius: 14,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 800,
+              color: "#9a3412",
+              textTransform: "uppercase",
+              letterSpacing: 0.3,
+              marginBottom: 8,
+            }}
+          >
+            Issues found
+          </div>
+
+          {stage.issues_found.length > 0 ? (
+            <ul
+              style={{
+                margin: 0,
+                paddingLeft: 18,
+                color: "#7c2d12",
+                lineHeight: 1.7,
+              }}
+            >
+              {stage.issues_found.map((issue, index) => (
+                <li key={`calc-issue-${index}`}>{issue}</li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ margin: 0, color: "#9a3412", lineHeight: 1.7 }}>
+              No meaningful issues found.
+            </p>
+          )}
+        </div>
+
+        <div
+          style={{
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 14,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 800,
+              color: "#475569",
+              textTransform: "uppercase",
+              letterSpacing: 0.3,
+              marginBottom: 8,
+            }}
+          >
+            Warnings
+          </div>
+
+          {stage.warnings.length > 0 ? (
+            <ul
+              style={{
+                margin: 0,
+                paddingLeft: 18,
+                color: "#334155",
+                lineHeight: 1.7,
+              }}
+            >
+              {stage.warnings.map((warning, index) => (
+                <li key={`calc-warning-${index}`}>{warning}</li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ margin: 0, color: "#64748b", lineHeight: 1.7 }}>
+              No warnings returned.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function ResultsPanel({ result }: { result: ApprovalResponse }) {
-  const counts = getStatusCounts(result);
+  const invoiceDetail = result.extraction_details.find(
+    (detail) => detail.key_fields?.document_type === "invoice",
+  );
+
+  const calculationStage = result.stages.find(
+    (stage) => stage.name === "Calculation Check",
+  );
+  const ticketStage = result.stages.find(
+    (stage) => stage.name === "Ticket Match Check",
+  );
+  const pricingStage = result.stages.find(
+    (stage) => stage.name === "Pricing Breakdown Check",
+  );
 
   return (
     <div
@@ -238,190 +496,37 @@ export function ResultsPanel({ result }: { result: ApprovalResponse }) {
     >
       <section
         style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-          color: "#ffffff",
-          borderRadius: 22,
-          padding: 24,
-          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)",
-          minWidth: 0,
-          overflow: "hidden",
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 20,
+          padding: 20,
+          boxShadow: "0 10px 24px rgba(15, 23, 42, 0.05)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 14,
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            marginBottom: 16,
-            minWidth: 0,
-          }}
-        >
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: 0.45,
-                textTransform: "uppercase",
-                color: "#93c5fd",
-                marginBottom: 8,
-              }}
-            >
-              Invoice Review Result
-            </div>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 28,
-                lineHeight: 1.25,
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
-              }}
-            >
-              {result.invoice_filename}
-            </h2>
-          </div>
-
-          <StatusBadge status={result.overall_status} />
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 28, color: "#0f172a" }}>
+            Invoice review result
+          </h2>
         </div>
-
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 10,
-            fontSize: 18,
-            fontWeight: 700,
-            color: "#ffffff",
-            lineHeight: 1.5,
-            overflowWrap: "anywhere",
-          }}
-        >
-          {result.overall_summary}
-        </p>
-
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 18,
-            color: "#cbd5e1",
-            lineHeight: 1.8,
-            maxWidth: 950,
-            overflowWrap: "anywhere",
-            wordBreak: "break-word",
-          }}
-        >
-          {result.overall_explanation}
-        </p>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: 12,
-            minWidth: 0,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 14,
           }}
         >
-          <div
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 16,
-              padding: 14,
-              minWidth: 0,
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#cbd5e1", marginBottom: 6 }}>
-              Stages
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 800 }}>
-              {result.stages.length}
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 16,
-              padding: 14,
-              minWidth: 0,
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#cbd5e1", marginBottom: 6 }}>
-              Approved stages
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 800 }}>
-              {counts.approved}
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 16,
-              padding: 14,
-              minWidth: 0,
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#cbd5e1", marginBottom: 6 }}>
-              Needs review
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 800 }}>{counts.review}</div>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 16,
-              padding: 14,
-              minWidth: 0,
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#cbd5e1", marginBottom: 6 }}>
-              Not approved
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 800 }}>
-              {counts.rejected}
-            </div>
-          </div>
+          {calculationStage ? (
+            <StageSummaryCard stage={calculationStage} />
+          ) : null}
+          {ticketStage ? <StageSummaryCard stage={ticketStage} /> : null}
+          {pricingStage ? <StageSummaryCard stage={pricingStage} /> : null}
         </div>
       </section>
 
-      <section style={{ display: "grid", gap: 16, minWidth: 0 }}>
-        <div>
-          <h3 style={{ marginBottom: 6, fontSize: 24, color: "#0f172a" }}>
-            Extraction details
-          </h3>
-          <p style={{ marginTop: 0, color: "#64748b", lineHeight: 1.7 }}>
-            This section shows what text was extracted from each uploaded
-            document before the AI made its review.
-          </p>
-        </div>
+      <InvoicePreview detail={invoiceDetail} />
 
-        {result.extraction_details.map((detail) => (
-          <ExtractionCard key={detail.source_name} detail={detail} />
-        ))}
-      </section>
-
-      <section style={{ display: "grid", gap: 16, minWidth: 0 }}>
-        <div>
-          <h3 style={{ marginBottom: 6, fontSize: 24, color: "#0f172a" }}>
-            Stage-by-stage review
-          </h3>
-          <p style={{ marginTop: 0, color: "#64748b", lineHeight: 1.7 }}>
-            Each section explains what the AI checked, what it found, and
-            whether there is anything that still needs human attention.
-          </p>
-        </div>
-
-        {result.stages.map((stage) => (
-          <StageCard key={stage.name} stage={stage} />
-        ))}
-      </section>
+      <CalculationDetails stage={calculationStage} />
     </div>
   );
 }
