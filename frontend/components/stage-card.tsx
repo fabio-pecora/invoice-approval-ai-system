@@ -1,291 +1,260 @@
-import { StatusBadge } from "@/components/status-badge";
-import { StageResult } from "@/lib/types";
+"use client";
 
-function asList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => String(item)).filter(Boolean);
+type StageResult = {
+  stage_name: string;
+  status: "Approved" | "Partially Approved" | "Requires Human Review" | "Not Approved";
+  explanation: string;
+  confidence: number;
+  llm_fallback_used: boolean;
+  issues_found: string[];
+  warnings: string[];
+  extracted_data?: any;
+};
+
+type Props = {
+  stage: StageResult;
+};
+
+function statusClass(status: StageResult["status"]) {
+  switch (status) {
+    case "Approved":
+      return "status-approved";
+    case "Partially Approved":
+      return "status-partial";
+    case "Requires Human Review":
+      return "status-review";
+    case "Not Approved":
+      return "status-rejected";
+    default:
+      return "status-review";
+  }
 }
 
-function renderReviewData(stage: StageResult) {
-  const reviewBasis = asList(stage.extracted_data?.review_basis);
-  const matchedExamples = asList(stage.extracted_data?.matched_examples);
-  const unmatchedExamples = asList(stage.extracted_data?.unmatched_examples);
-  const notes = asList(stage.extracted_data?.notes);
+function formatPercent(value: number | undefined) {
+  if (typeof value !== "number") return "N/A";
+  return `${value}%`;
+}
 
-  const sections = [
-    { title: "What this stage looked at", values: reviewBasis },
-    { title: "Matched examples", values: matchedExamples },
-    { title: "Items needing attention", values: unmatchedExamples },
-    { title: "Notes", values: notes },
-  ].filter((section) => section.values.length > 0);
-
-  if (sections.length === 0) {
-    return (
-      <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>
-        No additional structured details were returned for this stage.
-      </p>
-    );
+function renderList(items: string[]) {
+  if (!items || items.length === 0) {
+    return <p className="muted-text">No direct issues reported.</p>;
   }
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      {sections.map((section) => (
-        <div key={section.title}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#0f172a",
-              marginBottom: 8,
-            }}
-          >
-            {section.title}
-          </div>
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: 18,
-              color: "#334155",
-              lineHeight: 1.7,
-            }}
-          >
-            {section.values.map((value, index) => (
-              <li key={`${section.title}-${index}`}>{value}</li>
-            ))}
-          </ul>
-        </div>
+    <ul className="bullet-list">
+      {items.map((item, index) => (
+        <li key={`${item}-${index}`}>{item}</li>
       ))}
+    </ul>
+  );
+}
+
+function renderKeyValueCard(title: string, value: string | number) {
+  return (
+    <div className="mini-stat-card">
+      <div className="mini-stat-label">{title}</div>
+      <div className="mini-stat-value">{value}</div>
     </div>
   );
 }
 
-export function StageCard({ stage }: { stage: StageResult }) {
+function renderTicketSection(data: any) {
+  const summary = data?.support_summary ?? {};
+  const matches = data?.matches ?? [];
+  const missing = data?.missing_from_tickets ?? [];
+  const extras = data?.extras_on_invoice ?? [];
+  const uncertain = data?.uncertain_matches ?? [];
+
   return (
-    <section
-      style={{
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 18,
-        padding: 22,
-        boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 14,
-          flexWrap: "wrap",
-          marginBottom: 14,
-        }}
-      >
+    <div className="ticket-check-layout">
+      <div className="mini-stat-grid">
+        {renderKeyValueCard("Invoice Items", summary.invoice_item_count ?? 0)}
+        {renderKeyValueCard("Ticket Items", summary.ticket_item_count ?? 0)}
+        {renderKeyValueCard("Strong Matches", summary.matched_count ?? 0)}
+        {renderKeyValueCard("Uncertain Matches", summary.uncertain_count ?? 0)}
+        {renderKeyValueCard("Unsupported Items", summary.unsupported_count ?? 0)}
+      </div>
+
+      <div className="structured-block">
+        <h4>Matched Items</h4>
+        {matches.length === 0 ? (
+          <p className="muted-text">No strong ticket matches found.</p>
+        ) : (
+          <div className="structured-list">
+            {matches.map((item: any, index: number) => (
+              <div key={index} className="structured-row-card">
+                <div className="structured-row-top">
+                  <span className="structured-title">{item.invoice_description}</span>
+                  <span className="pill pill-good">Supported</span>
+                </div>
+                <div className="structured-row-grid">
+                  <div>
+                    <span className="structured-label">Invoice Qty</span>
+                    <span>{item.invoice_quantity ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Ticket Match</span>
+                    <span>{item.matched_ticket_description ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Ticket Qty</span>
+                    <span>{item.matched_ticket_quantity ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Similarity</span>
+                    <span>{item.similarity ?? "N/A"}</span>
+                  </div>
+                </div>
+                <p className="structured-reason">{item.reason}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="structured-block">
+        <h4>Missing Support</h4>
+        {missing.length === 0 ? (
+          <p className="muted-text">No missing support found.</p>
+        ) : (
+          <div className="structured-list">
+            {missing.map((item: any, index: number) => (
+              <div key={index} className="structured-row-card warning-card">
+                <div className="structured-row-top">
+                  <span className="structured-title">{item.invoice_description}</span>
+                  <span className="pill pill-bad">Missing Support</span>
+                </div>
+                <div className="structured-row-grid">
+                  <div>
+                    <span className="structured-label">Invoice Qty</span>
+                    <span>{item.invoice_quantity ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Closest Match</span>
+                    <span>{item.matched_ticket_description ?? "None"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Similarity</span>
+                    <span>{item.similarity ?? "N/A"}</span>
+                  </div>
+                </div>
+                <p className="structured-reason">{item.reason}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="structured-block">
+        <h4>Uncertain Matches</h4>
+        {uncertain.length === 0 ? (
+          <p className="muted-text">No uncertain matches found.</p>
+        ) : (
+          <div className="structured-list">
+            {uncertain.map((item: any, index: number) => (
+              <div key={index} className="structured-row-card neutral-card">
+                <div className="structured-row-top">
+                  <span className="structured-title">{item.invoice_description}</span>
+                  <span className="pill pill-neutral">Review</span>
+                </div>
+                <div className="structured-row-grid">
+                  <div>
+                    <span className="structured-label">Closest Ticket Item</span>
+                    <span>{item.matched_ticket_description ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Similarity</span>
+                    <span>{item.similarity ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="structured-label">Quantity Check</span>
+                    <span>{item.quantity_status ?? "unknown"}</span>
+                  </div>
+                </div>
+                <p className="structured-reason">{item.reason}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {extras.length > 0 && (
+        <div className="structured-block">
+          <h4>Invoice Items That Need Attention</h4>
+          <div className="structured-list">
+            {extras.map((item: any, index: number) => (
+              <div key={index} className="structured-row-card warning-card">
+                <div className="structured-row-top">
+                  <span className="structured-title">{item.invoice_description}</span>
+                  <span className="pill pill-bad">Check Needed</span>
+                </div>
+                <p className="structured-reason">{item.reason}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderDefaultJson(data: any) {
+  if (!data) {
+    return <p className="muted-text">No extracted data available.</p>;
+  }
+
+  return (
+    <pre className="json-box">
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  );
+}
+
+export default function StageCard({ stage }: Props) {
+  const isTicketStage = stage.stage_name === "Ticket Match Check";
+
+  return (
+    <section className="card stage-card">
+      <div className="stage-card-header">
+        <h3>{stage.stage_name}</h3>
+        <span className={`status-badge ${statusClass(stage.status)}`}>{stage.status}</span>
+      </div>
+
+      <p className="stage-explanation">{stage.explanation}</p>
+
+      <div className="stage-meta-grid">
+        <div className="meta-card">
+          <span className="meta-label">Confidence</span>
+          <span className="meta-value">{formatPercent(stage.confidence)}</span>
+        </div>
+        <div className="meta-card">
+          <span className="meta-label">LLM Fallback</span>
+          <span className="meta-value">{stage.llm_fallback_used ? "Used" : "Not used"}</span>
+        </div>
+      </div>
+
+      <div className="stage-columns">
         <div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 0.4,
-              textTransform: "uppercase",
-              color: "#64748b",
-              marginBottom: 6,
-            }}
-          >
-            Review Stage
-          </div>
-          <h3 style={{ margin: 0, fontSize: 22, color: "#0f172a" }}>
-            {stage.name}
-          </h3>
+          <h4>Issues Found</h4>
+          {renderList(stage.issues_found)}
         </div>
-
-        <StatusBadge status={stage.status} />
-      </div>
-
-      <p
-        style={{
-          marginTop: 0,
-          marginBottom: 12,
-          fontSize: 17,
-          fontWeight: 700,
-          color: "#111827",
-          lineHeight: 1.5,
-        }}
-      >
-        {stage.summary}
-      </p>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap",
-          marginBottom: 16,
-        }}
-      >
-        <span
-          style={{
-            background: "#eff6ff",
-            color: "#1d4ed8",
-            border: "1px solid #bfdbfe",
-            borderRadius: 999,
-            padding: "6px 10px",
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          Confidence {Math.round(stage.confidence * 100)}%
-        </span>
-
-        <span
-          style={{
-            background: "#f8fafc",
-            color: "#334155",
-            border: "1px solid #e2e8f0",
-            borderRadius: 999,
-            padding: "6px 10px",
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          AI Review
-        </span>
-      </div>
-
-      <div
-        style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
-          borderRadius: 14,
-          padding: 16,
-          marginBottom: 18,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: "#475569",
-            textTransform: "uppercase",
-            letterSpacing: 0.3,
-            marginBottom: 8,
-          }}
-        >
-          Explanation
-        </div>
-        <p style={{ margin: 0, color: "#334155", lineHeight: 1.75 }}>
-          {stage.explanation}
-        </p>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
-        <div
-          style={{
-            background: "#fff7ed",
-            border: "1px solid #fed7aa",
-            borderRadius: 14,
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#9a3412",
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: 0.3,
-            }}
-          >
-            Issues Found
-          </div>
-
-          {stage.issues_found.length > 0 ? (
-            <ul
-              style={{
-                margin: 0,
-                paddingLeft: 18,
-                color: "#7c2d12",
-                lineHeight: 1.7,
-              }}
-            >
-              {stage.issues_found.map((issue, index) => (
-                <li key={`${stage.name}-issue-${index}`}>{issue}</li>
-              ))}
-            </ul>
-          ) : (
-            <p style={{ margin: 0, color: "#9a3412", lineHeight: 1.6 }}>
-              No meaningful issues were found in this stage.
-            </p>
-          )}
-        </div>
-
-        <div
-          style={{
-            background: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            borderRadius: 14,
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#475569",
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: 0.3,
-            }}
-          >
-            Warnings
-          </div>
-
-          {stage.warnings.length > 0 ? (
-            <ul
-              style={{
-                margin: 0,
-                paddingLeft: 18,
-                color: "#334155",
-                lineHeight: 1.7,
-              }}
-            >
+        <div>
+          <h4>Warnings</h4>
+          {stage.warnings && stage.warnings.length > 0 ? (
+            <ul className="bullet-list">
               {stage.warnings.map((warning, index) => (
-                <li key={`${stage.name}-warning-${index}`}>{warning}</li>
+                <li key={`${warning}-${index}`}>{warning}</li>
               ))}
             </ul>
           ) : (
-            <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>
-              No warnings were returned.
-            </p>
+            <p className="muted-text">No warnings reported.</p>
           )}
         </div>
       </div>
 
-      <div
-        style={{
-          borderTop: "1px solid #e2e8f0",
-          paddingTop: 18,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: "#0f172a",
-            marginBottom: 12,
-          }}
-        >
-          Supporting details
-        </div>
-
-        {renderReviewData(stage)}
+      <div className="stage-extracted-data">
+        <h4>Extracted Data</h4>
+        {isTicketStage ? renderTicketSection(stage.extracted_data) : renderDefaultJson(stage.extracted_data)}
       </div>
     </section>
   );
