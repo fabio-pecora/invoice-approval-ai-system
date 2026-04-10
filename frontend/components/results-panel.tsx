@@ -508,9 +508,6 @@ function InvoicePreview({
           <InfoBlock label="Vendor name" value={invoice.vendorName} />
           <InfoBlock label="Date" value={invoice.invoiceDate} />
           <InfoBlock label="Total price" value={invoice.invoiceTotal} />
-          <InfoBlock label="Extraction method" value={invoice.extractionMethod} />
-          <InfoBlock label="Text quality" value={invoice.textQuality} />
-          <InfoBlock label="Source file" value={invoice.sourceName} />
         </div>
       </div>
     </Card>
@@ -770,11 +767,19 @@ function PricingDetails({ stage }: { stage?: StageResult }) {
     return null;
   }
 
-  const data = asObject<Record<string, unknown>>(stage.extracted_data);
-  const matchedItems = asArray<PricingMatchItem>(data.matches);
-  const mismatches = asArray<PricingMatchItem>(data.mismatches);
-  const unclearItems = asArray<PricingMatchItem>(data.unclear_cases);
-  const summary = asObject<PricingSummary>(data.pricing_summary);
+  let tone: "green" | "amber" | "red" = "amber";
+  let statusLabel = "Needs review";
+
+  if (stage.status === "Approved") {
+    tone = "green";
+    statusLabel = "Approved";
+  } else if (stage.status === "Not Approved") {
+    tone = "red";
+    statusLabel = "Not approved";
+  }
+
+  const hasProblems =
+    stage.issues_found.length > 0 || stage.warnings.length > 0;
 
   return (
     <Card>
@@ -787,94 +792,43 @@ function PricingDetails({ stage }: { stage?: StageResult }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 12,
+          gridTemplateColumns: "minmax(220px, 320px)",
+          gap: 14,
           marginBottom: 18,
         }}
       >
         <InfoBlock
-          label="Checked items"
-          value={summary.checked_count}
-          tone="default"
+          label="Pricing status"
+          value={statusLabel}
+          tone={tone}
         />
-        <InfoBlock
-          label="Price matches"
-          value={summary.matched_count}
-          tone="green"
-        />
-        <InfoBlock
-          label="Price mismatches"
-          value={summary.mismatch_count}
-          tone="red"
-        />
-        <InfoBlock
-          label="Unclear cases"
-          value={summary.unclear_count}
-          tone="amber"
-        />
-        <InfoBlock label="Confidence" value={`${stage.confidence}%`} />
-        <InfoBlock label="LLM used" value={stage.llm_used ? "Yes" : "No"} />
       </div>
 
       <TextPanel title="Explanation" text={stage.explanation} />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 14,
-          marginBottom: 16,
-        }}
-      >
-        <ListPanel
-          title="Matched prices"
-          items={matchedItems.map(
-            (item) =>
-              `${formatValue(item.invoice_description)} → invoice: ${formatValue(item.invoice_unit_price)}, expected: ${formatValue(item.expected_unit_price)}`
-          )}
-          emptyText="No confirmed price matches found."
-          tone="green"
-        />
+      {hasProblems ? (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 14,
+          }}
+        >
+          <ListPanel
+            title="Warnings"
+            items={stage.warnings}
+            emptyText="No warnings returned."
+            tone="default"
+          />
 
-        <ListPanel
-          title="Price mismatches"
-          items={mismatches.map(
-            (item) =>
-              `${formatValue(item.invoice_description)} → invoice: ${formatValue(item.invoice_unit_price)}, expected: ${formatValue(item.expected_unit_price)}`
-          )}
-          emptyText="No price mismatches found."
-          tone="amber"
-        />
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 14,
-        }}
-      >
-        <ListPanel
-          title="Warnings"
-          items={
-            stage.warnings.length > 0
-              ? stage.warnings
-              : unclearItems.map(
-                  (item) =>
-                    `${formatValue(item.invoice_description)} → ${formatValue(item.reason)}`
-                )
-          }
-          emptyText="No warnings returned."
-          tone="default"
-        />
-
-        <ListPanel
-          title="Issues found"
-          items={stage.issues_found}
-          emptyText="No meaningful issues found."
-          tone="amber"
-        />
-      </div>
+          <ListPanel
+            title="Issues found"
+            items={stage.issues_found}
+            emptyText="No meaningful issues found."
+            tone="amber"
+          />
+        </div>
+      ) : null}
     </Card>
   );
 }

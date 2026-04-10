@@ -80,7 +80,7 @@ export function UploadPanel({
       </div>
 
       <label
-        className={`upload-box ${isDragging ? 'upload-box-active' : ''}`}
+        className={`upload-box ${isDragging || files.length > 0 ? 'upload-box-active' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
