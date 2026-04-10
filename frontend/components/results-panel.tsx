@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import {
   ApprovalResponse,
   ApprovalStatus,
@@ -71,7 +74,6 @@ function getInvoiceDetail(detail?: ExtractedDocumentData) {
       vendorName: "Not found",
       invoiceDate: "Not found",
       invoiceTotal: "Not found",
-      preview: "No preview available.",
       extractionMethod: "Not found",
       textQuality: "Not found",
       sourceName: "Not found",
@@ -82,7 +84,6 @@ function getInvoiceDetail(detail?: ExtractedDocumentData) {
     vendorName: formatValue(detail.key_fields?.vendor_name),
     invoiceDate: formatValue(detail.key_fields?.invoice_date),
     invoiceTotal: formatValue(detail.key_fields?.invoice_total),
-    preview: detail.raw_text_preview || "No preview available.",
     extractionMethod: formatValue(detail.extraction_method),
     textQuality: `${detail.text_quality_score}%`,
     sourceName: formatValue(detail.source_name),
@@ -413,8 +414,29 @@ function StageSummaryCard({ stage }: { stage: StageResult }) {
   );
 }
 
-function InvoicePreview({ detail }: { detail?: ExtractedDocumentData }) {
+function InvoicePreview({
+  detail,
+  invoiceFile,
+}: {
+  detail?: ExtractedDocumentData;
+  invoiceFile?: File | null;
+}) {
   const invoice = getInvoiceDetail(detail);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!invoiceFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(invoiceFile);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [invoiceFile]);
 
   return (
     <Card>
@@ -427,47 +449,68 @@ function InvoicePreview({ detail }: { detail?: ExtractedDocumentData }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 12,
-          marginBottom: 18,
+          gridTemplateColumns: "minmax(220px, 260px) 1fr",
+          gap: 18,
+          alignItems: "start",
         }}
       >
-        <InfoBlock label="Vendor name" value={invoice.vendorName} />
-        <InfoBlock label="Date" value={invoice.invoiceDate} />
-        <InfoBlock label="Total price" value={invoice.invoiceTotal} />
-        <InfoBlock label="Extraction method" value={invoice.extractionMethod} />
-        <InfoBlock label="Text quality" value={invoice.textQuality} />
-        <InfoBlock label="Source file" value={invoice.sourceName} />
-      </div>
+        <div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 800,
+              color: "#0f172a",
+              marginBottom: 10,
+            }}
+          >
+            Invoice preview
+          </div>
 
-      <div>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: "#0f172a",
-            marginBottom: 10,
-          }}
-        >
-          Invoice preview
+          {previewUrl ? (
+            <iframe
+              src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0&page=1&view=FitH`}
+              title="Invoice PDF preview"
+              style={{
+                width: "100%",
+                height: 320,
+                border: "1px solid #dbe4f0",
+                borderRadius: 14,
+                background: "#ffffff",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                height: 320,
+                border: "1px solid #dbe4f0",
+                borderRadius: 14,
+                background: "#f8fafc",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#64748b",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              Preview not available
+            </div>
+          )}
         </div>
 
         <div
           style={{
-            background: "#0f172a",
-            color: "#e2e8f0",
-            borderRadius: 14,
-            padding: 16,
-            fontSize: 13,
-            lineHeight: 1.7,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            overflowWrap: "anywhere",
-            maxHeight: 260,
-            overflowY: "auto",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 12,
           }}
         >
-          {invoice.preview}
+          <InfoBlock label="Vendor name" value={invoice.vendorName} />
+          <InfoBlock label="Date" value={invoice.invoiceDate} />
+          <InfoBlock label="Total price" value={invoice.invoiceTotal} />
+          <InfoBlock label="Extraction method" value={invoice.extractionMethod} />
+          <InfoBlock label="Text quality" value={invoice.textQuality} />
+          <InfoBlock label="Source file" value={invoice.sourceName} />
         </div>
       </div>
     </Card>
@@ -540,7 +583,6 @@ function CalculationDetails({ stage }: { stage?: StageResult }) {
   );
 }
 
-
 function TicketDetails({ stage }: { stage?: StageResult }) {
   if (!stage) {
     return null;
@@ -563,12 +605,6 @@ function TicketDetails({ stage }: { stage?: StageResult }) {
     data.wrong_ticket === true ||
     data.ticket_identifier_matched === false ||
     data.pick_ticket_matched === false;
-
-  const hasProblems =
-    explicitWrongTicket ||
-    missingItems.length > 0 ||
-    uncertainItems.length > 0 ||
-    stage.issues_found.length > 0;
 
   let rightTicketLabel: "Yes" | "Wrong ticket(s)" | "Needs review";
   let approvalResult: "Approved" | "Needs Review" | "Not Approved";
@@ -843,7 +879,13 @@ function PricingDetails({ stage }: { stage?: StageResult }) {
   );
 }
 
-export function ResultsPanel({ result }: { result: ApprovalResponse }) {
+export function ResultsPanel({
+  result,
+  invoiceFile,
+}: {
+  result: ApprovalResponse;
+  invoiceFile?: File | null;
+}) {
   const invoiceDetail = result.extraction_details.find(
     (detail) => detail.key_fields?.document_type === "invoice"
   );
@@ -923,7 +965,7 @@ export function ResultsPanel({ result }: { result: ApprovalResponse }) {
         </div>
       </Card>
 
-      <InvoicePreview detail={invoiceDetail} />
+      <InvoicePreview detail={invoiceDetail} invoiceFile={invoiceFile} />
 
       <CalculationDetails stage={calculationStage} />
       <TicketDetails stage={ticketStage} />

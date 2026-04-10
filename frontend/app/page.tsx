@@ -56,7 +56,7 @@ export default function HomePage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
+        background: "linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%)",
         padding: "32px 20px 56px",
       }}
     >
@@ -70,11 +70,12 @@ export default function HomePage() {
       >
         <section
           style={{
-            background: "linear-gradient(135deg, #1d4ed8 0%, #1e293b 100%)",
-            color: "#ffffff",
+            background: "#eaf4ff",
+            color: "#0f172a",
+            border: "1px solid #dbeafe",
             borderRadius: 28,
             padding: "30px 28px",
-            boxShadow: "0 20px 45px rgba(15, 23, 42, 0.18)",
+            boxShadow: "0 20px 45px rgba(15, 23, 42, 0.08)",
           }}
         >
           <div
@@ -83,7 +84,7 @@ export default function HomePage() {
               fontWeight: 800,
               letterSpacing: 0.5,
               textTransform: "uppercase",
-              color: "#bfdbfe",
+              color: "#2563eb",
               marginBottom: 10,
             }}
           >
@@ -95,6 +96,7 @@ export default function HomePage() {
               margin: "0 0 12px 0",
               fontSize: "clamp(32px, 4vw, 48px)",
               lineHeight: 1.1,
+              color: "#0f172a",
             }}
           >
             AI invoice review for AP/AR teams
@@ -106,7 +108,7 @@ export default function HomePage() {
               maxWidth: 900,
               fontSize: 17,
               lineHeight: 1.8,
-              color: "#dbeafe",
+              color: "#334155",
             }}
           >
             Upload an invoice, optionally add tickets and a pricing breakdown,
@@ -143,7 +145,7 @@ export default function HomePage() {
             >
               <UploadPanel
                 title="Invoice PDF"
-                description="Required. Upload the invoice that needs to be reviewed."
+                description="Required. Drag the invoice here or click to upload."
                 multiple={false}
                 files={invoiceFiles}
                 onChange={(files) => setInvoice(files[0] || null)}
@@ -153,7 +155,7 @@ export default function HomePage() {
 
               <UploadPanel
                 title="Ticket PDFs"
-                description="Optional. Add one or more support tickets for item verification."
+                description="Optional. Drag one or more support tickets here or click to upload."
                 multiple={true}
                 files={tickets}
                 onChange={(files) => setTickets(files)}
@@ -163,7 +165,7 @@ export default function HomePage() {
 
               <UploadPanel
                 title="Pricing Breakdown PDF"
-                description="Optional. Add a rate sheet or pricing breakdown to verify charges."
+                description="Optional. Drag the pricing breakdown here or click to upload."
                 multiple={false}
                 files={pricingFiles}
                 onChange={(files) => setPricingBreakdown(files[0] || null)}
@@ -179,16 +181,14 @@ export default function HomePage() {
                   border: "none",
                   borderRadius: 16,
                   padding: "16px 18px",
-                  background: loading
-                    ? "#94a3b8"
-                    : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  background: loading ? "#94a3b8" : "#2563eb",
                   color: "#ffffff",
                   fontSize: 16,
                   fontWeight: 800,
                   cursor: loading ? "not-allowed" : "pointer",
                   boxShadow: loading
                     ? "none"
-                    : "0 12px 24px rgba(37, 99, 235, 0.25)",
+                    : "0 12px 24px rgba(37, 99, 235, 0.20)",
                 }}
               >
                 {loading ? "Running review..." : "Run Invoice Review"}
@@ -274,7 +274,9 @@ export default function HomePage() {
               </section>
             ) : null}
 
-            {!loading && result ? <ResultsPanel result={result} /> : null}
+            {!loading && result ? (
+              <ResultsPanel result={result} invoiceFile={invoice} />
+            ) : null}
 
             {!loading && !result ? (
               <section
